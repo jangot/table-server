@@ -2,6 +2,13 @@ import type { AppConfig } from './types';
 
 const LOG_LEVELS: AppConfig['logLevel'][] = ['info', 'warn', 'error', 'debug'];
 
+const CHROME_WINDOW_MODES: AppConfig['chromeWindowMode'][] = [
+  'kiosk',
+  'app',
+  'fullscreen',
+  'default',
+];
+
 function getEnv(name: string): string | undefined {
   return process.env[name];
 }
@@ -51,6 +58,20 @@ function parseOptionalPositiveInt(
   return num;
 }
 
+function parseChromeWindowMode(
+  name: string,
+  value: string | undefined
+): AppConfig['chromeWindowMode'] | undefined {
+  if (value === undefined || value.trim() === '') return undefined;
+  const normalized = value.toLowerCase().trim() as AppConfig['chromeWindowMode'];
+  if (!CHROME_WINDOW_MODES.includes(normalized)) {
+    throw new Error(
+      `Invalid ${name}: "${value}" (expected one of: ${CHROME_WINDOW_MODES.join(', ')})`
+    );
+  }
+  return normalized;
+}
+
 /**
  * Read and validate environment variables, return typed config.
  * On validation error: throws Error with a clear message.
@@ -71,6 +92,10 @@ export function validateEnv(): AppConfig {
     'OBS_READY_TIMEOUT',
     getEnv('OBS_READY_TIMEOUT')
   );
+  const chromeWindowMode = parseChromeWindowMode(
+    'CHROME_WINDOW_MODE',
+    getEnv('CHROME_WINDOW_MODE')
+  );
 
   return {
     chromePath,
@@ -80,6 +105,7 @@ export function validateEnv(): AppConfig {
     logLevel,
     devToolsPort,
     chromeReadyTimeout,
+    chromeWindowMode: chromeWindowMode ?? 'default',
     obsReadyTimeout,
   };
 }

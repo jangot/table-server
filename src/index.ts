@@ -3,6 +3,7 @@ import { createLogger } from './modules/logger';
 import { checkChromeAndObs } from './modules/startup-checks';
 import { startIdleServer } from './modules/idle-server';
 import { runOrchestrator, type AppModule } from './modules/orchestrator';
+import { createChromeModule } from './modules/chrome';
 
 async function main(): Promise<void> {
   const config = getConfig();
@@ -13,19 +14,14 @@ async function main(): Promise<void> {
 
   await startIdleServer(config);
 
-  const chromeStub: AppModule = {
-    name: 'Chrome',
-    start: async () => {
-      logger.info('Chrome module stub');
-    },
-  };
+  const chromeModule = createChromeModule(config, logger);
   const obsStub: AppModule = {
     name: 'OBS',
     start: async () => {
       logger.info('OBS module stub');
     },
   };
-  await runOrchestrator([chromeStub, obsStub], logger);
+  await runOrchestrator([chromeModule, obsStub], logger);
 }
 
 main().catch((err) => {

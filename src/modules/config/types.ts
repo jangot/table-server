@@ -2,6 +2,8 @@
  * Application configuration (stage 001: idle server and executable checks).
  * Extended in later stages: botToken, allowedUsers, restart policy, etc.
  */
+export type ChromeWindowMode = 'kiosk' | 'app' | 'fullscreen' | 'default';
+
 export interface AppConfig {
   chromePath: string;
   obsPath: string;
@@ -10,5 +12,6 @@ export interface AppConfig {
   logLevel: 'info' | 'warn' | 'error' | 'debug';
   devToolsPort?: number;
   chromeReadyTimeout?: number;
+  chromeWindowMode?: ChromeWindowMode;
   obsReadyTimeout?: number;
 }

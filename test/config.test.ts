@@ -36,6 +36,7 @@ describe('config', () => {
       ...Object.keys(REQUIRED),
       'DEVTOOLS_PORT',
       'CHROME_READY_TIMEOUT',
+      'CHROME_WINDOW_MODE',
       'OBS_READY_TIMEOUT',
     ]);
     resetConfigForTesting();

@@ -2,6 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateEnv = validateEnv;
 const LOG_LEVELS = ['info', 'warn', 'error', 'debug'];
+const CHROME_WINDOW_MODES = [
+    'kiosk',
+    'app',
+    'fullscreen',
+    'default',
+];
 function getEnv(name) {
     return process.env[name];
 }
@@ -44,6 +50,15 @@ function parseOptionalPositiveInt(name, value) {
     }
     return num;
 }
+function parseChromeWindowMode(name, value) {
+    if (value === undefined || value.trim() === '')
+        return undefined;
+    const normalized = value.toLowerCase().trim();
+    if (!CHROME_WINDOW_MODES.includes(normalized)) {
+        throw new Error(`Invalid ${name}: "${value}" (expected one of: ${CHROME_WINDOW_MODES.join(', ')})`);
+    }
+    return normalized;
+}
 /**
  * Read and validate environment variables, return typed config.
  * On validation error: throws Error with a clear message.
@@ -57,6 +72,7 @@ function validateEnv() {
     const devToolsPort = parseOptionalPort('DEVTOOLS_PORT', getEnv('DEVTOOLS_PORT'));
     const chromeReadyTimeout = parseOptionalPositiveInt('CHROME_READY_TIMEOUT', getEnv('CHROME_READY_TIMEOUT'));
     const obsReadyTimeout = parseOptionalPositiveInt('OBS_READY_TIMEOUT', getEnv('OBS_READY_TIMEOUT'));
+    const chromeWindowMode = parseChromeWindowMode('CHROME_WINDOW_MODE', getEnv('CHROME_WINDOW_MODE'));
     return {
         chromePath,
         obsPath,
@@ -65,6 +81,7 @@ function validateEnv() {
         logLevel,
         devToolsPort,
         chromeReadyTimeout,
+        chromeWindowMode: chromeWindowMode ?? 'default',
         obsReadyTimeout,
     };
 }
