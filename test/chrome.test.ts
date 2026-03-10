@@ -82,6 +82,24 @@ describe('buildChromeArgs', () => {
     const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
     assert.ok(!args.some((a) => a.startsWith('--user-data-dir=')));
   });
+
+  it('initialUrl appears only as single arg (no shell injection); user URL never in spawn', () => {
+    const config = baseConfig();
+    const dangerousUrl = 'http://localhost:3000/"; echo pwned #';
+    const args = buildChromeArgs(config, 9222, dangerousUrl);
+    assert.ok(
+      !args.some((a) => a === 'echo' || a === 'pwned' || a === ';'),
+      'no shell payload as separate argv elements'
+    );
+    const last = args[args.length - 1];
+    const hasApp = args.some((a) => a.startsWith('--app='));
+    if (hasApp) {
+      const appArg = args.find((a) => a.startsWith('--app='));
+      assert.ok(appArg === `--app=${dangerousUrl}`, 'initialUrl only in --app=');
+    } else {
+      assert.strictEqual(last, dangerousUrl, 'initialUrl only as last element');
+    }
+  });
 });
 
 describe('waitForDevTools', () => {

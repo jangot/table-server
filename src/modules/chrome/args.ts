@@ -2,7 +2,8 @@ import type { AppConfig } from '../config/types';
 
 /**
  * Build Chrome CLI args for remote debugging and single-window mode.
- * Uses only config values (no user input). Safe to pass to spawn(argv).
+ * Only config and local idle URL are used; user-provided URLs are never
+ * passed here (they go via CDP in navigateToUrl). Safe to pass to spawn(argv).
  */
 export function buildChromeArgs(
   config: AppConfig,

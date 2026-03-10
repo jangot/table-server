@@ -1,5 +1,11 @@
 import type { TelegramBotDeps } from './types';
 
+/**
+ * Security: user input (URL from message, /restart arg) is never passed to
+ * shell or spawn. URL is only used in navigateToUrl (CDP + file). /restart
+ * is restricted to chrome|obs|all. When adding URL validation, log rejected requests.
+ */
+
 export interface CommandContext {
   from?: { id: number; username?: string } | null;
   message: { text: string };
@@ -20,6 +26,12 @@ export async function handleStatus(ctx: CommandContext, deps: TelegramBotDeps): 
       `Готовность: ${ready ? 'ready' : 'degraded'}. Chrome: ${chrome ? 'alive' : 'dead'}. OBS: ${obs ? 'alive' : 'dead'}.`
     )
     .catch(() => {});
+  if (from) {
+    deps.logger.info('Telegram bot: remote command processed', {
+      type: 'status',
+      userId: from.id,
+    });
+  }
 }
 
 export async function handleIdle(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
@@ -35,6 +47,10 @@ export async function handleIdle(ctx: CommandContext, deps: TelegramBotDeps): Pr
   const idleUrl = `http://localhost:${deps.config.idlePort}/`;
   try {
     await deps.navigateToUrl(idleUrl, { config: deps.config, logger: deps.logger });
+    deps.logger.info('Telegram bot: remote command processed', {
+      type: 'idle',
+      userId: from.id,
+    });
     await ctx.reply('Переключено на idle.').catch(() => {});
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -61,6 +77,11 @@ export async function handleRestart(ctx: CommandContext, deps: TelegramBotDeps):
   if (arg === 'chrome') {
     try {
       await restartChrome(deps.config, deps.logger);
+      deps.logger.info('Telegram bot: remote command processed', {
+        type: 'restart',
+        target: arg,
+        userId: from.id,
+      });
       await ctx.reply('Chrome перезапущен.').catch(() => {});
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -71,6 +92,11 @@ export async function handleRestart(ctx: CommandContext, deps: TelegramBotDeps):
   if (arg === 'obs') {
     try {
       await restartObs(deps.config, deps.logger);
+      deps.logger.info('Telegram bot: remote command processed', {
+        type: 'restart',
+        target: arg,
+        userId: from.id,
+      });
       await ctx.reply('OBS перезапущен.').catch(() => {});
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -81,6 +107,11 @@ export async function handleRestart(ctx: CommandContext, deps: TelegramBotDeps):
   try {
     await restartChrome(deps.config, deps.logger);
     await restartObs(deps.config, deps.logger);
+    deps.logger.info('Telegram bot: remote command processed', {
+      type: 'restart',
+      target: arg,
+      userId: from.id,
+    });
     await ctx.reply('Chrome и OBS перезапущены.').catch(() => {});
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -123,7 +154,11 @@ export async function handleText(ctx: CommandContext, deps: TelegramBotDeps): Pr
 
   try {
     await deps.navigateToUrl(url, { config: deps.config, logger: deps.logger });
-    deps.logger.info('Telegram bot: navigated to URL', { url, userId: from.id });
+    deps.logger.info('Telegram bot: remote command processed', {
+      type: 'open',
+      url,
+      userId: from.id,
+    });
     await ctx.reply('Страница открыта.').catch(() => {});
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

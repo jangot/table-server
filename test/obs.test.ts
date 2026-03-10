@@ -39,6 +39,17 @@ describe('buildObsArgs', () => {
     assert.strictEqual(args.length, 1);
     assert.strictEqual(args[0], '--profile=/home/user/.config/obs-studio');
   });
+
+  it('returns only config-derived args; no user input in args', () => {
+    const config = baseConfig({ obsProfilePath: '/tmp/obs' });
+    const args = buildObsArgs(config);
+    assert.ok(Array.isArray(args));
+    for (const a of args) {
+      assert.ok(a.startsWith('--profile='), 'only --profile= from config');
+    }
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(args[0], '--profile=/tmp/obs');
+  });
 });
 
 describe('waitForObsReady', () => {

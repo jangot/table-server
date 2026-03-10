@@ -3,6 +3,11 @@ import type { ChildProcess } from 'node:child_process';
 import type { Logger } from '../logger';
 import { waitForDevTools } from './waitDevTools';
 
+/**
+ * Security: chromePath and args are passed to spawn with shell: false and must
+ * contain only values from config (env), never user input — protects against command injection.
+ */
+
 /** Set by launchChrome for use in task 003 (CDP / close). */
 let chromeProcess: ChildProcess | null = null;
 

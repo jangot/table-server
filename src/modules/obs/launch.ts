@@ -3,6 +3,11 @@ import type { ChildProcess } from 'node:child_process';
 import type { Logger } from '../logger';
 import { waitForObsReady } from './ready';
 
+/**
+ * Security: obsPath and args are passed to spawn with shell: false and must
+ * contain only values from config (env), never user input — protects against command injection.
+ */
+
 let obsProcess: ChildProcess | null = null;
 
 export function getObsProcess(): ChildProcess | null {
