@@ -16,4 +16,6 @@ export interface AppConfig {
   obsReadyTimeout?: number;
   /** Optional path to file storing last navigated URL for recovery after restart. */
   lastUrlStatePath?: string;
+  /** Optional path for Chrome user data directory (env: CHROME_USER_DATA_DIR). */
+  chromeUserDataDir?: string;
 }

@@ -68,6 +68,19 @@ describe('buildChromeArgs', () => {
     const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
     assert.strictEqual(args[0], '--remote-debugging-port=9222');
   });
+
+  it('chromeUserDataDir: adds --user-data-dir at start when set', () => {
+    const config = baseConfig({ chromeUserDataDir: '/tmp/chrome-profile' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.strictEqual(args[0], '--user-data-dir=/tmp/chrome-profile');
+    assert.ok(args.includes('--remote-debugging-port=9222'));
+  });
+
+  it('chromeUserDataDir undefined: no --user-data-dir arg', () => {
+    const config = baseConfig();
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.some((a) => a.startsWith('--user-data-dir=')));
+  });
 });
 
 describe('waitForDevTools', () => {

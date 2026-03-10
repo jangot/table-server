@@ -21,6 +21,7 @@ On startup, the application loads variables from a `.env` file in the current wo
 | `DEVTOOLS_PORT` | Chrome DevTools remote debugging port | `9222` |
 | `CHROME_READY_TIMEOUT` | Timeout (ms) waiting for Chrome to be ready | `30000` |
 | `OBS_READY_TIMEOUT` | Timeout (ms) waiting for OBS to be ready | `10000` |
+| `CHROME_USER_DATA_DIR` | Chrome user data directory path (passed as `--user-data-dir`) | `/tmp/chrome-profile` |
 
 ## Development example
 
