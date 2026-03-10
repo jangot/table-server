@@ -76,6 +76,8 @@ function validateEnv() {
     const lastUrlStatePath = getEnv('LAST_URL_STATE_PATH')?.trim();
     const chromeUserDataDir = getEnv('CHROME_USER_DATA_DIR')?.trim();
     const obsProfilePath = getEnv('OBS_PROFILE_PATH')?.trim();
+    const watchdogCheckIntervalMs = parseOptionalPositiveInt('WATCHDOG_CHECK_INTERVAL_MS', getEnv('WATCHDOG_CHECK_INTERVAL_MS'));
+    const watchdogRestartMinIntervalMs = parseOptionalPositiveInt('WATCHDOG_RESTART_MIN_INTERVAL_MS', getEnv('WATCHDOG_RESTART_MIN_INTERVAL_MS'));
     return {
         chromePath,
         obsPath,
@@ -89,6 +91,8 @@ function validateEnv() {
         lastUrlStatePath: lastUrlStatePath || undefined,
         chromeUserDataDir: chromeUserDataDir || undefined,
         obsProfilePath: obsProfilePath || undefined,
+        watchdogCheckIntervalMs: watchdogCheckIntervalMs ?? undefined,
+        watchdogRestartMinIntervalMs: watchdogRestartMinIntervalMs ?? undefined,
     };
 }
 //# sourceMappingURL=validate.js.map

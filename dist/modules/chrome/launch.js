@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getChromeProcess = getChromeProcess;
+exports.killChromeProcess = killChromeProcess;
 exports.launchChrome = launchChrome;
 const node_child_process_1 = require("node:child_process");
 const waitDevTools_1 = require("./waitDevTools");
@@ -8,6 +9,16 @@ const waitDevTools_1 = require("./waitDevTools");
 let chromeProcess = null;
 function getChromeProcess() {
     return chromeProcess;
+}
+/**
+ * Kill the current Chrome process if any. Sets chromeProcess to null.
+ * Use before re-launching Chrome (e.g. restart).
+ */
+function killChromeProcess() {
+    if (chromeProcess != null) {
+        chromeProcess.kill('SIGTERM');
+        chromeProcess = null;
+    }
 }
 /**
  * Launch Chrome with given args, wait for DevTools to be ready, then resolve.

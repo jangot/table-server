@@ -4,8 +4,9 @@ import { createLogger } from './modules/logger';
 import { checkChromeAndObs } from './modules/startup-checks';
 import { startIdleServer } from './modules/idle-server';
 import { runOrchestrator } from './modules/orchestrator';
-import { createChromeModule } from './modules/chrome';
-import { createObsModule } from './modules/obs';
+import { createChromeModule, isChromeAlive, restartChrome } from './modules/chrome';
+import { createObsModule, isObsAlive, restartObs } from './modules/obs';
+import { startWatchdog } from './modules/watchdog';
 
 async function main(): Promise<void> {
   const config = getConfig();
@@ -19,6 +20,15 @@ async function main(): Promise<void> {
   const chromeModule = createChromeModule(config, logger);
   const obsModule = createObsModule(config, logger);
   await runOrchestrator([chromeModule, obsModule], logger);
+
+  if (config.watchdogCheckIntervalMs != null && config.watchdogCheckIntervalMs > 0) {
+    startWatchdog(config, logger, {
+      isChromeAlive,
+      restartChrome,
+      isObsAlive,
+      restartObs,
+    });
+  }
 }
 
 main().catch((err) => {

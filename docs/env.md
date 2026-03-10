@@ -23,6 +23,8 @@ On startup, the application loads variables from a `.env` file in the current wo
 | `OBS_READY_TIMEOUT` | Timeout (ms) waiting for OBS to be ready | `10000` |
 | `OBS_PROFILE_PATH` | Path to OBS profile/config directory (optional) | `/home/user/.config/obs-studio` |
 | `CHROME_USER_DATA_DIR` | Chrome user data directory path (passed as `--user-data-dir`) | `/tmp/chrome-profile` |
+| `WATCHDOG_CHECK_INTERVAL_MS` | Interval (ms) for watchdog status checks of Chrome and OBS; if not set, watchdog is disabled | `15000` |
+| `WATCHDOG_RESTART_MIN_INTERVAL_MS` | Min interval (ms) between watchdog-triggered restarts (default 10000) | `10000` |
 
 ## Development example
 

@@ -19,5 +19,9 @@ export interface AppConfig {
     lastUrlStatePath?: string;
     /** Optional path for Chrome user data directory (env: CHROME_USER_DATA_DIR). */
     chromeUserDataDir?: string;
+    /** Interval (ms) for watchdog status checks. If not set, watchdog is disabled. */
+    watchdogCheckIntervalMs?: number;
+    /** Min interval (ms) between watchdog-triggered restarts. */
+    watchdogRestartMinIntervalMs?: number;
 }
 //# sourceMappingURL=types.d.ts.map

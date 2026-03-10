@@ -2,11 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getObsProcess = void 0;
 exports.createObsModule = createObsModule;
+exports.isObsAlive = isObsAlive;
+exports.restartObs = restartObs;
 const args_1 = require("./args");
 const launch_1 = require("./launch");
 const restart_1 = require("./restart");
 const RESTART_MIN_INTERVAL_MS = 5000;
 const MAX_RESTARTS = 10;
+let performRestartRef = null;
 function createObsModule(config, logger) {
     let lastRestartAt = 0;
     let restartCount = 0;
@@ -21,24 +24,28 @@ function createObsModule(config, logger) {
             return;
         proc.once('exit', (code, signal) => {
             logger.warn('OBS exited', { code, signal });
-            restartCount++;
-            if (restartCount > MAX_RESTARTS) {
-                logger.error('OBS max restarts reached, not restarting');
-                return;
-            }
-            const delay = (0, restart_1.getRestartDelayMs)(lastRestartAt, RESTART_MIN_INTERVAL_MS);
-            const doRestart = () => {
-                lastRestartAt = Date.now();
-                run()
-                    .then(() => scheduleRestart())
-                    .catch((err) => logger.error('OBS restart failed', err));
-            };
-            if (delay > 0)
-                setTimeout(doRestart, delay);
-            else
-                doRestart();
+            performRestart();
         });
     }
+    function performRestart() {
+        restartCount++;
+        if (restartCount > MAX_RESTARTS) {
+            logger.error('OBS max restarts reached, not restarting');
+            return;
+        }
+        const delay = (0, restart_1.getRestartDelayMs)(lastRestartAt, RESTART_MIN_INTERVAL_MS);
+        const doRun = () => {
+            lastRestartAt = Date.now();
+            run()
+                .then(() => scheduleRestart())
+                .catch((err) => logger.error('OBS restart failed', err));
+        };
+        if (delay > 0)
+            setTimeout(doRun, delay);
+        else
+            doRun();
+    }
+    performRestartRef = performRestart;
     return {
         name: 'OBS',
         async start() {
@@ -46,6 +53,20 @@ function createObsModule(config, logger) {
             scheduleRestart();
         },
     };
+}
+function isObsAlive() {
+    const proc = (0, launch_1.getObsProcess)();
+    return proc != null && proc.exitCode === null;
+}
+/**
+ * Restart OBS if it is not alive. Uses the same performRestart logic as the exit handler.
+ * No-op if OBS is already running.
+ */
+function restartObs(_config, _logger) {
+    if (isObsAlive())
+        return Promise.resolve();
+    performRestartRef?.();
+    return Promise.resolve();
 }
 var launch_2 = require("./launch");
 Object.defineProperty(exports, "getObsProcess", { enumerable: true, get: function () { return launch_2.getObsProcess; } });

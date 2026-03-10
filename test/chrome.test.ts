@@ -7,6 +7,7 @@ import {
   navigateToUrl,
   readLastUrl,
   writeLastUrl,
+  isChromeAlive,
 } from '../src/modules/chrome';
 import { waitForDevTools } from '../src/modules/chrome/waitDevTools';
 import type { AppConfig } from '../src/modules/config/types';
@@ -125,5 +126,12 @@ describe('navigateToUrl', () => {
       () => navigateToUrl('http://example.com', { config, logger }),
       /Chrome is not running/
     );
+  });
+});
+
+describe('isChromeAlive', () => {
+  it('returns false when Chrome process is not running', () => {
+    const config = baseConfig();
+    assert.strictEqual(isChromeAlive(config), false);
   });
 });

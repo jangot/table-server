@@ -7,7 +7,7 @@ import {
   getRestartDelayMs,
   shouldThrottleRestart,
 } from '../src/modules/obs/restart';
-import { createObsModule } from '../src/modules/obs';
+import { createObsModule, isObsAlive, restartObs } from '../src/modules/obs';
 import type { AppConfig } from '../src/modules/config/types';
 import { createLogger } from '../src/modules/logger';
 
@@ -108,5 +108,19 @@ describe('createObsModule', () => {
     const mod = createObsModule(config, logger);
     assert.strictEqual(mod.name, 'OBS');
     assert.strictEqual(typeof mod.start, 'function');
+  });
+});
+
+describe('isObsAlive', () => {
+  it('returns false when OBS process is not running', () => {
+    assert.strictEqual(isObsAlive(), false);
+  });
+});
+
+describe('restartObs', () => {
+  it('returns without throwing when OBS is not running and module not started', async () => {
+    const config = baseConfig();
+    const logger = createLogger('info');
+    await assert.doesNotReject(() => restartObs(config, logger));
   });
 });
