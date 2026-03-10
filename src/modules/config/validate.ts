@@ -99,6 +99,7 @@ export function validateEnv(): AppConfig {
 
   const lastUrlStatePath = getEnv('LAST_URL_STATE_PATH')?.trim();
   const chromeUserDataDir = getEnv('CHROME_USER_DATA_DIR')?.trim();
+  const obsProfilePath = getEnv('OBS_PROFILE_PATH')?.trim();
 
   return {
     chromePath,
@@ -112,5 +113,6 @@ export function validateEnv(): AppConfig {
     obsReadyTimeout,
     lastUrlStatePath: lastUrlStatePath || undefined,
     chromeUserDataDir: chromeUserDataDir || undefined,
+    obsProfilePath: obsProfilePath || undefined,
   };
 }

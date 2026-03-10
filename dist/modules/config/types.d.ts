@@ -13,7 +13,11 @@ export interface AppConfig {
     chromeReadyTimeout?: number;
     chromeWindowMode?: ChromeWindowMode;
     obsReadyTimeout?: number;
+    /** Optional path to OBS profile/config directory (env: OBS_PROFILE_PATH). */
+    obsProfilePath?: string;
     /** Optional path to file storing last navigated URL for recovery after restart. */
     lastUrlStatePath?: string;
+    /** Optional path for Chrome user data directory (env: CHROME_USER_DATA_DIR). */
+    chromeUserDataDir?: string;
 }
 //# sourceMappingURL=types.d.ts.map

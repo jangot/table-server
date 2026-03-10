@@ -1,0 +1,112 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
+import type { ChildProcess } from 'node:child_process';
+import { buildObsArgs } from '../src/modules/obs/args';
+import { waitForObsReady } from '../src/modules/obs/ready';
+import {
+  getRestartDelayMs,
+  shouldThrottleRestart,
+} from '../src/modules/obs/restart';
+import { createObsModule } from '../src/modules/obs';
+import type { AppConfig } from '../src/modules/config/types';
+import { createLogger } from '../src/modules/logger';
+
+function baseConfig(overrides: Partial<AppConfig> = {}): AppConfig {
+  return {
+    chromePath: '/usr/bin/chrome',
+    obsPath: '/usr/bin/obs',
+    idlePort: 3000,
+    idleViewsPath: './views',
+    logLevel: 'info',
+    ...overrides,
+  };
+}
+
+describe('buildObsArgs', () => {
+  it('returns empty array when no obsProfilePath', () => {
+    const config = baseConfig();
+    const args = buildObsArgs(config);
+    assert.ok(Array.isArray(args));
+    assert.strictEqual(args.length, 0);
+  });
+
+  it('returns array with --profile= when obsProfilePath set', () => {
+    const config = baseConfig({
+      obsProfilePath: '/home/user/.config/obs-studio',
+    });
+    const args = buildObsArgs(config);
+    assert.ok(Array.isArray(args));
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(args[0], '--profile=/home/user/.config/obs-studio');
+  });
+});
+
+describe('waitForObsReady', () => {
+  it('rejects when process already exited (exitCode !== null)', async () => {
+    const proc = { exitCode: 1, killed: false } as ChildProcess;
+    await assert.rejects(
+      () => waitForObsReady(proc, 5000),
+      /OBS process exited before ready/
+    );
+  });
+
+  it('rejects when process killed', async () => {
+    const proc = { exitCode: null, killed: true } as ChildProcess;
+    await assert.rejects(
+      () => waitForObsReady(proc, 5000),
+      /OBS process exited before ready/
+    );
+  });
+
+  it('rejects on timeout when process stays alive', async () => {
+    const proc = { exitCode: null, killed: false } as ChildProcess;
+    await assert.rejects(
+      () => waitForObsReady(proc, 100),
+      /OBS not ready within 100ms/
+    );
+  });
+
+  it('resolves when process stays alive for one interval', async () => {
+    const proc = { exitCode: null, killed: false } as ChildProcess;
+    await assert.doesNotReject(() => waitForObsReady(proc, 5000));
+  });
+});
+
+describe('getRestartDelayMs / shouldThrottleRestart', () => {
+  const minIntervalMs = 5000;
+
+  it('getRestartDelayMs: lastRestartAt just now returns minIntervalMs', () => {
+    const lastRestartAt = Date.now();
+    const delay = getRestartDelayMs(lastRestartAt, minIntervalMs);
+    assert.strictEqual(delay, minIntervalMs);
+  });
+
+  it('getRestartDelayMs: lastRestartAt long ago returns 0', () => {
+    const lastRestartAt = Date.now() - 60000;
+    const delay = getRestartDelayMs(lastRestartAt, minIntervalMs);
+    assert.strictEqual(delay, 0);
+  });
+
+  it('shouldThrottleRestart: true when within min interval', () => {
+    const lastRestartAt = Date.now();
+    assert.strictEqual(shouldThrottleRestart(lastRestartAt, minIntervalMs), true);
+  });
+
+  it('shouldThrottleRestart: false when past min interval', () => {
+    const lastRestartAt = Date.now() - 10000;
+    assert.strictEqual(
+      shouldThrottleRestart(lastRestartAt, minIntervalMs),
+      false
+    );
+  });
+});
+
+describe('createObsModule', () => {
+  it('returns module with name OBS and start function', () => {
+    const config = baseConfig();
+    const logger = createLogger('info');
+    const mod = createObsModule(config, logger);
+    assert.strictEqual(mod.name, 'OBS');
+    assert.strictEqual(typeof mod.start, 'function');
+  });
+});

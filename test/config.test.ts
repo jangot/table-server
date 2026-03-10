@@ -38,6 +38,7 @@ describe('config', () => {
       'CHROME_READY_TIMEOUT',
       'CHROME_WINDOW_MODE',
       'OBS_READY_TIMEOUT',
+      'OBS_PROFILE_PATH',
     ]);
     resetConfigForTesting();
   });
@@ -104,5 +105,14 @@ describe('config', () => {
       /Invalid LOG_LEVEL.*expected one of/
     );
     setEnv(REQUIRED);
+  });
+
+  it('optional OBS_PROFILE_PATH is passed through', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.OBS_PROFILE_PATH = ' /home/user/.config/obs-studio ';
+    const config = getConfig();
+    assert.strictEqual(config.obsProfilePath, '/home/user/.config/obs-studio');
+    delete process.env.OBS_PROFILE_PATH;
   });
 });
