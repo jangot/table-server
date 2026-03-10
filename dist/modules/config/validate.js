@@ -73,6 +73,7 @@ function validateEnv() {
     const chromeReadyTimeout = parseOptionalPositiveInt('CHROME_READY_TIMEOUT', getEnv('CHROME_READY_TIMEOUT'));
     const obsReadyTimeout = parseOptionalPositiveInt('OBS_READY_TIMEOUT', getEnv('OBS_READY_TIMEOUT'));
     const chromeWindowMode = parseChromeWindowMode('CHROME_WINDOW_MODE', getEnv('CHROME_WINDOW_MODE'));
+    const lastUrlStatePath = getEnv('LAST_URL_STATE_PATH')?.trim();
     return {
         chromePath,
         obsPath,
@@ -83,6 +84,7 @@ function validateEnv() {
         chromeReadyTimeout,
         chromeWindowMode: chromeWindowMode ?? 'default',
         obsReadyTimeout,
+        lastUrlStatePath: lastUrlStatePath || undefined,
     };
 }
 //# sourceMappingURL=validate.js.map

@@ -97,6 +97,8 @@ export function validateEnv(): AppConfig {
     getEnv('CHROME_WINDOW_MODE')
   );
 
+  const lastUrlStatePath = getEnv('LAST_URL_STATE_PATH')?.trim();
+
   return {
     chromePath,
     obsPath,
@@ -107,5 +109,6 @@ export function validateEnv(): AppConfig {
     chromeReadyTimeout,
     chromeWindowMode: chromeWindowMode ?? 'default',
     obsReadyTimeout,
+    lastUrlStatePath: lastUrlStatePath || undefined,
   };
 }

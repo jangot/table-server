@@ -1,8 +1,16 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { buildChromeArgs } from '../src/modules/chrome/args';
+import {
+  navigateToUrl,
+  readLastUrl,
+  writeLastUrl,
+} from '../src/modules/chrome';
 import { waitForDevTools } from '../src/modules/chrome/waitDevTools';
 import type { AppConfig } from '../src/modules/config/types';
+import { createLogger } from '../src/modules/logger';
 
 function baseConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   return {
@@ -70,6 +78,39 @@ describe('waitForDevTools', () => {
     await assert.rejects(
       () => waitForDevTools(port, timeoutMs),
       /Chrome DevTools not ready within 500ms/
+    );
+  });
+});
+
+describe('lastUrlState', () => {
+  it('writes and reads URL from file', async () => {
+    const tmp = join(tmpdir(), `last-url-${Date.now()}`);
+    await writeLastUrl(tmp, 'https://example.com');
+    const read = await readLastUrl(tmp);
+    assert.strictEqual(read, 'https://example.com');
+  });
+
+  it('returns null when file does not exist', async () => {
+    const read = await readLastUrl('/nonexistent/path');
+    assert.strictEqual(read, null);
+  });
+
+  it('overwrites previous value on write', async () => {
+    const tmp = join(tmpdir(), `last-url-${Date.now()}`);
+    await writeLastUrl(tmp, 'https://first.com');
+    await writeLastUrl(tmp, 'https://second.com');
+    const read = await readLastUrl(tmp);
+    assert.strictEqual(read, 'https://second.com');
+  });
+});
+
+describe('navigateToUrl', () => {
+  it('throws when Chrome process is not running', async () => {
+    const config = baseConfig();
+    const logger = createLogger('info');
+    await assert.rejects(
+      () => navigateToUrl('http://example.com', { config, logger }),
+      /Chrome is not running/
     );
   });
 });

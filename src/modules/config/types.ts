@@ -14,4 +14,6 @@ export interface AppConfig {
   chromeReadyTimeout?: number;
   chromeWindowMode?: ChromeWindowMode;
   obsReadyTimeout?: number;
+  /** Optional path to file storing last navigated URL for recovery after restart. */
+  lastUrlStatePath?: string;
 }

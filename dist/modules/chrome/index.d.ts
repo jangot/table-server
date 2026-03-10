@@ -3,6 +3,11 @@ import type { Logger } from '../logger';
 import type { AppModule } from '../orchestrator';
 export declare function createChromeModule(config: AppConfig, logger: Logger): AppModule;
 export { buildChromeArgs } from './args';
-export { waitForDevTools } from './waitDevTools';
 export { getChromeProcess } from './launch';
+export { readLastUrl, writeLastUrl } from './lastUrlState';
+export { waitForDevTools } from './waitDevTools';
+export declare function navigateToUrl(url: string, deps: {
+    config: AppConfig;
+    logger: Logger;
+}): Promise<void>;
 //# sourceMappingURL=index.d.ts.map
