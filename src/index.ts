@@ -2,9 +2,9 @@ import 'dotenv/config';
 import { getConfig } from './modules/config';
 import { createLogger } from './modules/logger';
 import { checkChromeAndObs } from './modules/startup-checks';
-import { startIdleServer } from './modules/idle-server';
+import { startIdleServer, setHealthChecker } from './modules/idle-server';
 import { runOrchestrator } from './modules/orchestrator';
-import { createChromeModule, isChromeAlive, navigateToUrl, restartChrome } from './modules/chrome';
+import { createChromeModule, isChromeAlive, navigateToUrl, readLastUrl, restartChrome } from './modules/chrome';
 import { createObsModule, isObsAlive, restartObs } from './modules/obs';
 import { startWatchdog } from './modules/watchdog';
 import { createAllowedUsersChecker } from './modules/users';
@@ -32,6 +32,17 @@ async function main(): Promise<void> {
     });
   }
 
+  setHealthChecker(() => ({
+    chrome: isChromeAlive(config),
+    obs: isObsAlive(),
+  }));
+
+  const lastUrlPath = config.lastUrlStatePath ?? './.last-url';
+  const lastUrl = await readLastUrl(lastUrlPath);
+  if (lastUrl) {
+    await navigateToUrl(lastUrl, { config, logger });
+  }
+
   if (config.telegramBotToken) {
     const allowedUsers = createAllowedUsersChecker(config);
     startBot({
@@ -41,6 +52,8 @@ async function main(): Promise<void> {
       navigateToUrl,
       isChromeAlive,
       isObsAlive: (c) => (void c, isObsAlive()),
+      restartChrome,
+      restartObs,
     }).catch((err) => {
       logger.error('Telegram bot failed to start', err);
     });

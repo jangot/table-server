@@ -10,7 +10,7 @@
     "build": "tsc",
     "start": "npm run build && node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "node -r ts-node/register --test test/config.test.ts test/idle-server.test.ts test/chrome.test.ts test/obs.test.ts test/watchdog.test.ts test/users.test.ts",
+    "test": "node -r ts-node/register --test test/config.test.ts test/idle-server.test.ts test/chrome.test.ts test/obs.test.ts test/watchdog.test.ts test/users.test.ts test/telegram-bot.test.ts",
     "lint": "eslint src test"
   },
   "keywords": [],

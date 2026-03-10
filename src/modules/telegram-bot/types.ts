@@ -9,4 +9,6 @@ export interface TelegramBotDeps {
   navigateToUrl: (url: string, deps: { config: AppConfig; logger: Logger }) => Promise<void>;
   isChromeAlive: (config: AppConfig) => boolean;
   isObsAlive: (config: AppConfig) => boolean;
+  restartChrome?: (config: AppConfig, logger: Logger) => Promise<void>;
+  restartObs?: (config: AppConfig, logger: Logger) => Promise<void>;
 }
