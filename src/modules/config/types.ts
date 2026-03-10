@@ -24,4 +24,8 @@ export interface AppConfig {
   watchdogCheckIntervalMs?: number;
   /** Min interval (ms) between watchdog-triggered restarts. */
   watchdogRestartMinIntervalMs?: number;
+  /** Telegram Bot API token (env: TELEGRAM_BOT_TOKEN). If not set, bot is not started. */
+  telegramBotToken?: string;
+  /** Allowed Telegram user ids or usernames without @ (env: ALLOWED_TELEGRAM_USERS, comma-separated). */
+  allowedTelegramUsers?: string[];
 }

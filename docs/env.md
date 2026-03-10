@@ -18,6 +18,8 @@ On startup, the application loads variables from a `.env` file in the current wo
 
 | Variable | Description | Example |
 |----------|-------------|---------|
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot API token; if set, the bot starts and accepts commands | `123:ABC...` |
+| `ALLOWED_TELEGRAM_USERS` | Comma-separated list of Telegram user ids or usernames (without @) allowed to send commands | `123456789,johndoe` |
 | `DEVTOOLS_PORT` | Chrome DevTools remote debugging port | `9222` |
 | `CHROME_READY_TIMEOUT` | Timeout (ms) waiting for Chrome to be ready | `30000` |
 | `OBS_READY_TIMEOUT` | Timeout (ms) waiting for OBS to be ready | `10000` |
@@ -25,6 +27,8 @@ On startup, the application loads variables from a `.env` file in the current wo
 | `CHROME_USER_DATA_DIR` | Chrome user data directory path (passed as `--user-data-dir`) | `/tmp/chrome-profile` |
 | `WATCHDOG_CHECK_INTERVAL_MS` | Interval (ms) for watchdog status checks of Chrome and OBS; if not set, watchdog is disabled | `15000` |
 | `WATCHDOG_RESTART_MIN_INTERVAL_MS` | Min interval (ms) between watchdog-triggered restarts (default 10000) | `10000` |
+
+If `TELEGRAM_BOT_TOKEN` is not set, the Telegram bot is not started. If `ALLOWED_TELEGRAM_USERS` is empty or not set, no user can send commands to the bot.
 
 ## Development example
 

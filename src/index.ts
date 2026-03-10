@@ -4,9 +4,11 @@ import { createLogger } from './modules/logger';
 import { checkChromeAndObs } from './modules/startup-checks';
 import { startIdleServer } from './modules/idle-server';
 import { runOrchestrator } from './modules/orchestrator';
-import { createChromeModule, isChromeAlive, restartChrome } from './modules/chrome';
+import { createChromeModule, isChromeAlive, navigateToUrl, restartChrome } from './modules/chrome';
 import { createObsModule, isObsAlive, restartObs } from './modules/obs';
 import { startWatchdog } from './modules/watchdog';
+import { createAllowedUsersChecker } from './modules/users';
+import { startBot } from './modules/telegram-bot';
 
 async function main(): Promise<void> {
   const config = getConfig();
@@ -27,6 +29,20 @@ async function main(): Promise<void> {
       restartChrome,
       isObsAlive,
       restartObs,
+    });
+  }
+
+  if (config.telegramBotToken) {
+    const allowedUsers = createAllowedUsersChecker(config);
+    startBot({
+      config,
+      logger,
+      allowedUsers,
+      navigateToUrl,
+      isChromeAlive,
+      isObsAlive: (c) => (void c, isObsAlive()),
+    }).catch((err) => {
+      logger.error('Telegram bot failed to start', err);
     });
   }
 }

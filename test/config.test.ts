@@ -39,6 +39,8 @@ describe('config', () => {
       'CHROME_WINDOW_MODE',
       'OBS_READY_TIMEOUT',
       'OBS_PROFILE_PATH',
+      'TELEGRAM_BOT_TOKEN',
+      'ALLOWED_TELEGRAM_USERS',
     ]);
     resetConfigForTesting();
   });
@@ -114,5 +116,34 @@ describe('config', () => {
     const config = getConfig();
     assert.strictEqual(config.obsProfilePath, '/home/user/.config/obs-studio');
     delete process.env.OBS_PROFILE_PATH;
+  });
+
+  it('TELEGRAM_BOT_TOKEN and ALLOWED_TELEGRAM_USERS are in config when set', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.TELEGRAM_BOT_TOKEN = ' 123:ABC  ';
+    process.env.ALLOWED_TELEGRAM_USERS = ' 123456789 , johndoe ';
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.telegramBotToken, '123:ABC');
+    assert.deepStrictEqual(cfg.allowedTelegramUsers, ['123456789', 'johndoe']);
+    unsetEnv(['TELEGRAM_BOT_TOKEN', 'ALLOWED_TELEGRAM_USERS']);
+  });
+
+  it('telegramBotToken is absent when TELEGRAM_BOT_TOKEN not set', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    delete process.env.TELEGRAM_BOT_TOKEN;
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.telegramBotToken, undefined);
+  });
+
+  it('ALLOWED_TELEGRAM_USERS with spaces and commas parses to array without empty elements', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.TELEGRAM_BOT_TOKEN = 'x';
+    process.env.ALLOWED_TELEGRAM_USERS = ' a , , b ,  ';
+    const cfg = validateEnv();
+    assert.deepStrictEqual(cfg.allowedTelegramUsers, ['a', 'b']);
+    unsetEnv(['TELEGRAM_BOT_TOKEN', 'ALLOWED_TELEGRAM_USERS']);
   });
 });

@@ -110,6 +110,16 @@ export function validateEnv(): AppConfig {
     getEnv('WATCHDOG_RESTART_MIN_INTERVAL_MS')
   );
 
+  const telegramBotToken = getEnv('TELEGRAM_BOT_TOKEN')?.trim();
+  const allowedRaw = getEnv('ALLOWED_TELEGRAM_USERS');
+  const allowedTelegramUsers =
+    allowedRaw === undefined || allowedRaw.trim() === ''
+      ? undefined
+      : allowedRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+
   return {
     chromePath,
     obsPath,
@@ -125,5 +135,8 @@ export function validateEnv(): AppConfig {
     obsProfilePath: obsProfilePath || undefined,
     watchdogCheckIntervalMs: watchdogCheckIntervalMs ?? undefined,
     watchdogRestartMinIntervalMs: watchdogRestartMinIntervalMs ?? undefined,
+    ...(telegramBotToken ? { telegramBotToken } : {}),
+    allowedTelegramUsers:
+      allowedTelegramUsers?.length ? allowedTelegramUsers : undefined,
   };
 }
