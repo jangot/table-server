@@ -43,3 +43,5 @@ export LOG_LEVEL=debug
 ```
 
 Do not put secrets in env files committed to the repo. Use `.env` locally (and add it to `.gitignore`) or set variables in the process manager (e.g. PM2 ecosystem file).
+
+For running under PM2 and autostart on Linux, see [Deployment with PM2](deployment-pm2.md).
