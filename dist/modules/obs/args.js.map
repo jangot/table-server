@@ -1,1 +1,0 @@
-{"version":3,"file":"args.js","sourceRoot":"","sources":["../../../src/modules/obs/args.ts"],"names":[],"mappings":";;AAMA,oCAMC;AAVD;;;GAGG;AACH,SAAgB,YAAY,CAAC,MAAiB;IAC5C,MAAM,IAAI,GAAa,EAAE,CAAC;IAC1B,IAAI,MAAM,CAAC,cAAc,EAAE,CAAC;QAC1B,IAAI,CAAC,IAAI,CAAC,aAAa,MAAM,CAAC,cAAc,EAAE,CAAC,CAAC;IAClD,CAAC;IACD,OAAO,IAAI,CAAC;AACd,CAAC"}
