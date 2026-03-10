@@ -1,0 +1,31 @@
+{
+  "env": {},
+  "permissions": {
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(if [ -d \"apps\" ])",
+      "Bash([ -d \"libs\" ])",
+      "Bash(then echo \"MICROSERVICES_MONOREPO\")",
+      "Bash(elif [ -d \"src/modules\" ])",
+      "Bash(then echo \"MONOLITH\")",
+      "Bash(else echo \"SINGLE_APP\")",
+      "Bash(fi)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)",
+      "Bash(ls -la /Users/jangot/Projects/private/table-server | grep -E '\\\\.\\(json|ts|js|md|yaml|yml\\)$')"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  }
+}
