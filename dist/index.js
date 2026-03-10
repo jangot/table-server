@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+require("dotenv/config");
 const config_1 = require("./modules/config");
 const logger_1 = require("./modules/logger");
 const startup_checks_1 = require("./modules/startup-checks");

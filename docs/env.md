@@ -2,6 +2,8 @@
 
 Configuration is built **only from environment variables** (no config files). Invalid or missing required variables cause a clear error and exit.
 
+On startup, the application loads variables from a `.env` file in the current working directory (if present). Copy `.env.example` to `.env` and set your values. Variables already set in the process environment take precedence over `.env`.
+
 ## Required
 
 | Variable | Description | Example |
@@ -21,6 +23,8 @@ Configuration is built **only from environment variables** (no config files). In
 | `OBS_READY_TIMEOUT` | Timeout (ms) waiting for OBS to be ready | `10000` |
 
 ## Development example
+
+You can use a `.env` file (copy from `.env.example`) or set variables manually:
 
 ```bash
 export CHROME_PATH=/usr/bin/google-chrome

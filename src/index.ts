@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { getConfig } from './modules/config';
 import { createLogger } from './modules/logger';
 import { checkChromeAndObs } from './modules/startup-checks';
