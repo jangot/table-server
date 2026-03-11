@@ -23,6 +23,7 @@ function baseConfig(
     windowHeight?: number;
     windowPositionX?: number;
     windowPositionY?: number;
+    deviceScaleFactor?: number;
   } = {}
 ): AppConfig {
   return {
@@ -47,10 +48,10 @@ describe('buildChromeArgs', () => {
     assert.ok(args.includes('http://localhost:3000/'));
   });
 
-  it('chromeWindowMode kiosk: --kiosk at start', () => {
+  it('chromeWindowMode kiosk: --kiosk present', () => {
     const config = baseConfig({ windowMode: 'kiosk' });
     const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
-    assert.strictEqual(args[0], '--kiosk');
+    assert.ok(args.includes('--kiosk'));
     assert.ok(args.includes('--remote-debugging-port=9222'));
   });
 
@@ -159,6 +160,53 @@ describe('buildChromeArgs', () => {
     assert.ok(args.includes('--window-size=800,600'));
     assert.ok(args.includes('--window-position=0,0'));
     assert.ok(args.includes('--remote-debugging-port=9222'));
+  });
+
+  it('deviceScaleFactor set: adds --force-device-scale-factor arg', () => {
+    const config = baseConfig({ deviceScaleFactor: 1 });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--force-device-scale-factor=1'));
+  });
+
+  it('deviceScaleFactor 2: adds --force-device-scale-factor=2', () => {
+    const config = baseConfig({ deviceScaleFactor: 2 });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--force-device-scale-factor=2'));
+  });
+
+  it('deviceScaleFactor undefined: no --force-device-scale-factor arg', () => {
+    const config = baseConfig();
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.some((a) => a.startsWith('--force-device-scale-factor=')));
+  });
+
+  it('kiosk mode: includes --noerrdialogs and --disable-infobars', () => {
+    const config = baseConfig({ windowMode: 'kiosk' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--noerrdialogs'));
+    assert.ok(args.includes('--disable-infobars'));
+  });
+
+  it('fullscreen mode: does NOT include --noerrdialogs', () => {
+    const config = baseConfig({ windowMode: 'fullscreen' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.includes('--noerrdialogs'));
+    assert.ok(!args.includes('--disable-infobars'));
+  });
+
+  it('default mode: does NOT include --noerrdialogs', () => {
+    const config = baseConfig({ windowMode: 'default' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.includes('--noerrdialogs'));
+  });
+
+  it('kiosk + deviceScaleFactor: all three extra flags present', () => {
+    const config = baseConfig({ windowMode: 'kiosk', deviceScaleFactor: 1 });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--kiosk'));
+    assert.ok(args.includes('--noerrdialogs'));
+    assert.ok(args.includes('--disable-infobars'));
+    assert.ok(args.includes('--force-device-scale-factor=1'));
   });
 
   it('initialUrl appears only as single arg (no shell injection); user URL never in spawn', () => {

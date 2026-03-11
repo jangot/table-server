@@ -11,7 +11,8 @@
     "start": "npm run build && node dist/index.js",
     "dev": "ts-node src/index.ts",
     "test": "node -r ts-node/register --test test/config.test.ts test/idle-server.test.ts test/chrome.test.ts test/obs.test.ts test/watchdog.test.ts test/users.test.ts test/telegram-bot.test.ts test/obs-scenes.test.ts test/obs-scenes-scenes-config.test.ts",
-    "lint": "eslint src test"
+    "lint": "eslint src test",
+    "tasks": "ls -la ai-process/tasks"
   },
   "keywords": [],
   "author": "",

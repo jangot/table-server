@@ -54,6 +54,12 @@ export class ChromeConfig {
   @Min(-16384)
   @Max(16384)
   windowPositionY?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.1)
+  @Max(10)
+  deviceScaleFactor?: number;
 }
 
 export class ObsConfig {

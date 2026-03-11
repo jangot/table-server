@@ -20,6 +20,12 @@ function parseOptionalInt(value: string | undefined): number | undefined {
   return Number.isNaN(n) ? undefined : n;
 }
 
+function parseOptionalFloat(value: string | undefined): number | undefined {
+  if (value === undefined || value.trim() === '') return undefined;
+  const n = parseFloat(value.trim());
+  return Number.isNaN(n) ? undefined : n;
+}
+
 /** Рекурсивно собирает текстовые сообщения из массива ValidationError */
 function collectMessages(errors: ValidationError[], prefix = ''): string[] {
   const messages: string[] = [];
@@ -60,6 +66,7 @@ export function validateEnv(): AppConfig {
       windowHeight: parseOptionalInt(getEnv('CHROME_WINDOW_HEIGHT')),
       windowPositionX: parseOptionalInt(getEnv('CHROME_WINDOW_POSITION_X')),
       windowPositionY: parseOptionalInt(getEnv('CHROME_WINDOW_POSITION_Y')),
+      deviceScaleFactor: parseOptionalFloat(getEnv('CHROME_DEVICE_SCALE_FACTOR')),
     }),
     obs: plainToInstance(ObsConfig, {
       path: getEnv('OBS_PATH')?.trim(),

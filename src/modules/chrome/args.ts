@@ -26,6 +26,8 @@ export function buildChromeArgs(
   const useKiosk = config.chrome.kiosk === true || mode === 'kiosk';
   if (useKiosk) {
     args.unshift('--kiosk');
+    args.unshift('--noerrdialogs');
+    args.unshift('--disable-infobars');
   } else if (mode === 'app') {
     args.pop(); // remove initialUrl from end
     args.unshift(`--app=${initialUrl}`);
@@ -38,6 +40,9 @@ export function buildChromeArgs(
   }
   if (windowWidth !== undefined && windowHeight !== undefined) {
     args.unshift(`--window-size=${windowWidth},${windowHeight}`);
+  }
+  if (config.chrome.deviceScaleFactor !== undefined) {
+    args.unshift(`--force-device-scale-factor=${config.chrome.deviceScaleFactor}`);
   }
   return args;
 }
