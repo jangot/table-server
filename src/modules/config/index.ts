@@ -28,5 +28,5 @@ export function resetConfigForTesting(): void {
   cached = null;
 }
 
-export { AppConfig } from './types';
+export { AppConfig, ObsConfig, isObsScenesEnabled } from './types';
 export { validateEnv } from './validate';

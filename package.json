@@ -10,7 +10,7 @@
     "build": "tsc",
     "start": "npm run build && node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "node -r ts-node/register --test test/config.test.ts test/idle-server.test.ts test/chrome.test.ts test/obs.test.ts test/watchdog.test.ts test/users.test.ts test/telegram-bot.test.ts",
+    "test": "node -r ts-node/register --test test/config.test.ts test/idle-server.test.ts test/chrome.test.ts test/obs.test.ts test/watchdog.test.ts test/users.test.ts test/telegram-bot.test.ts test/obs-scenes.test.ts",
     "lint": "eslint src test"
   },
   "keywords": [],
@@ -23,6 +23,7 @@
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.21.0",
+    "obs-websocket-js": "^5.0.7",
     "puppeteer-core": "^23.0.0",
     "reflect-metadata": "^0.2.2",
     "telegraf": "^4.16.3"

@@ -17,6 +17,7 @@ export function buildChromeArgs(
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-default-apps',
+    '--kiosk',
     initialUrl,
   ];
   if (userDataDir) {

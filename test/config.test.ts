@@ -44,6 +44,9 @@ describe('config', () => {
       'CHROME_WINDOW_POSITION_Y',
       'OBS_READY_TIMEOUT',
       'OBS_PROFILE_PATH',
+      'OBS_HOST',
+      'OBS_PORT',
+      'OBS_PASSWORD',
       'TELEGRAM_BOT_TOKEN',
       'ALLOWED_TELEGRAM_USERS',
     ]);
@@ -215,5 +218,74 @@ describe('config', () => {
     assert.strictEqual(cfg.chrome.windowPositionX, -100);
     assert.strictEqual(cfg.chrome.windowPositionY, 50);
     unsetEnv(['CHROME_WINDOW_POSITION_X', 'CHROME_WINDOW_POSITION_Y']);
+  });
+
+  it('OBS_HOST, OBS_PORT, OBS_PASSWORD when set are in config', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.OBS_HOST = 'localhost';
+    process.env.OBS_PORT = '4455';
+    process.env.OBS_PASSWORD = 'secret';
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.obs.host, 'localhost');
+    assert.strictEqual(cfg.obs.port, 4455);
+    assert.strictEqual(cfg.obs.password, 'secret');
+    unsetEnv(['OBS_HOST', 'OBS_PORT', 'OBS_PASSWORD']);
+  });
+
+  it('OBS_HOST trimmed; OBS_PORT parsed as number', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.OBS_HOST = '  myhost  ';
+    process.env.OBS_PORT = ' 4455 ';
+    process.env.OBS_PASSWORD = 'pwd';
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.obs.host, 'myhost');
+    assert.strictEqual(cfg.obs.port, 4455);
+    unsetEnv(['OBS_HOST', 'OBS_PORT', 'OBS_PASSWORD']);
+  });
+
+  it('obs.host, obs.port, obs.password are undefined when env not set', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.obs.host, undefined);
+    assert.strictEqual(cfg.obs.port, undefined);
+    assert.strictEqual(cfg.obs.password, undefined);
+  });
+
+  it('OBS_PORT boundary: 1 and 65535 are valid', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.OBS_HOST = 'localhost';
+    process.env.OBS_PASSWORD = 'p';
+    process.env.OBS_PORT = '1';
+    const cfg1 = validateEnv();
+    assert.strictEqual(cfg1.obs.port, 1);
+    process.env.OBS_PORT = '65535';
+    resetConfigForTesting();
+    const cfg2 = validateEnv();
+    assert.strictEqual(cfg2.obs.port, 65535);
+    unsetEnv(['OBS_HOST', 'OBS_PORT', 'OBS_PASSWORD']);
+  });
+
+  it('validateEnv throws when OBS_PORT is 0 and OBS WebSocket env set', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.OBS_HOST = 'localhost';
+    process.env.OBS_PORT = '0';
+    process.env.OBS_PASSWORD = 'p';
+    assert.throws(() => validateEnv(), /port|obs/);
+    unsetEnv(['OBS_HOST', 'OBS_PORT', 'OBS_PASSWORD']);
+  });
+
+  it('validateEnv throws when OBS_PORT is 65536 and OBS WebSocket env set', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.OBS_HOST = 'localhost';
+    process.env.OBS_PORT = '65536';
+    process.env.OBS_PASSWORD = 'p';
+    assert.throws(() => validateEnv(), /port|obs/);
+    unsetEnv(['OBS_HOST', 'OBS_PORT', 'OBS_PASSWORD']);
   });
 });

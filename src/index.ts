@@ -7,6 +7,7 @@ import { startIdleServer, setHealthChecker } from './modules/idle-server';
 import { runOrchestrator } from './modules/orchestrator';
 import { createChromeModule, isChromeAlive, navigateToUrl, readLastUrl, restartChrome } from './modules/chrome';
 import { createObsModule, isObsAlive, restartObs } from './modules/obs';
+import { createObsScenesService } from './modules/obs-scenes';
 import { startWatchdog } from './modules/watchdog';
 import { createAllowedUsersChecker } from './modules/users';
 import { startBot } from './modules/telegram-bot';
@@ -23,6 +24,10 @@ async function main(): Promise<void> {
   const chromeModule = createChromeModule(config, logger);
   const obsModule = createObsModule(config, logger);
   await runOrchestrator([chromeModule, obsModule], logger);
+
+  const obsScenesService = createObsScenesService(config.obs, logger);
+  // obsScenesService reserved for Telegram bot (014) and Web API (015)
+  void obsScenesService;
 
   if (config.watchdog.checkIntervalMs != null && config.watchdog.checkIntervalMs > 0) {
     startWatchdog(config, logger, {

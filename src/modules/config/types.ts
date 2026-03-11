@@ -64,6 +64,30 @@ export class ObsConfig {
   @IsOptional()
   @IsString()
   profilePath?: string;
+
+  @IsOptional()
+  @IsString()
+  host?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(65535)
+  port?: number;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
+}
+
+/** Returns true if OBS WebSocket (scenes) is enabled: host, port and password are set (password may be empty string). */
+export function isObsScenesEnabled(obs: ObsConfig): boolean {
+  return (
+    obs.host != null &&
+    obs.host !== '' &&
+    obs.port != null &&
+    obs.password !== undefined
+  );
 }
 
 export class TelegramConfig {

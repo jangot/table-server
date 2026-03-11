@@ -64,6 +64,9 @@ export function validateEnv(): AppConfig {
       path: getEnv('OBS_PATH')?.trim(),
       readyTimeout: parseOptionalInt(getEnv('OBS_READY_TIMEOUT')),
       profilePath: getEnv('OBS_PROFILE_PATH')?.trim() || undefined,
+      host: getEnv('OBS_HOST')?.trim() || undefined,
+      port: parseOptionalInt(getEnv('OBS_PORT')),
+      password: getEnv('OBS_PASSWORD'),
     }),
     telegram: plainToInstance(TelegramConfig, {
       botToken: getEnv('TELEGRAM_BOT_TOKEN')?.trim() || undefined,

@@ -1,0 +1,178 @@
+import 'reflect-metadata';
+import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert';
+import type { Logger } from '../src/modules/logger';
+import {
+  createObsScenesService,
+  isObsScenesEnabled,
+  SceneNotFoundError,
+} from '../src/modules/obs-scenes';
+import { createObsScenesServiceImpl } from '../src/modules/obs-scenes/scenes-service';
+import type { ObsWebSocketClient } from '../src/modules/obs-scenes/client';
+import type { ObsConfig } from '../src/modules/config/types';
+
+function createMockLogger(): Logger & { lines: string[] } {
+  const lines: string[] = [];
+  return {
+    lines,
+    info(msg: string) {
+      lines.push(`info: ${msg}`);
+    },
+    warn(msg: string) {
+      lines.push(`warn: ${msg}`);
+    },
+    error(msg: string) {
+      lines.push(`error: ${msg}`);
+    },
+    debug(msg: string) {
+      lines.push(`debug: ${msg}`);
+    },
+  };
+}
+
+function createMockClient(overrides?: Partial<ObsWebSocketClient>): ObsWebSocketClient {
+  return {
+    connect() {},
+    async disconnect() {},
+    isConnected: () => true,
+    async getSceneList() {
+      return { scenes: [{ sceneName: 'Scene 1' }, { sceneName: 'Scene 2' }] };
+    },
+    async getCurrentProgramScene() {
+      return { sceneName: 'Scene 1' };
+    },
+    // Signature must match ObsWebSocketClient; param unused in default mock
+    async setCurrentProgramScene(name: string) {
+      void name;
+    },
+    ...overrides,
+  };
+}
+
+describe('obs-scenes', () => {
+  let logger: ReturnType<typeof createMockLogger>;
+
+  before(() => {
+    logger = createMockLogger();
+  });
+
+  after(() => {
+    logger.lines.length = 0;
+  });
+
+  describe('isObsScenesEnabled', () => {
+    it('returns true when host, port and password are set', () => {
+      const obs: ObsConfig = { path: '/usr/bin/obs', host: 'localhost', port: 4455, password: '' };
+      assert.strictEqual(isObsScenesEnabled(obs), true);
+    });
+
+    it('returns false when host is missing', () => {
+      const obs: ObsConfig = { path: '/usr/bin/obs', port: 4455, password: 'p' };
+      assert.strictEqual(isObsScenesEnabled(obs), false);
+    });
+
+    it('returns false when port is missing', () => {
+      const obs: ObsConfig = { path: '/usr/bin/obs', host: 'localhost', password: 'p' };
+      assert.strictEqual(isObsScenesEnabled(obs), false);
+    });
+
+    it('returns false when password is undefined', () => {
+      const obs: ObsConfig = { path: '/usr/bin/obs', host: 'localhost', port: 4455 };
+      assert.strictEqual(isObsScenesEnabled(obs), false);
+    });
+
+    it('returns true when password is empty string', () => {
+      const obs: ObsConfig = { path: '/usr/bin/obs', host: 'localhost', port: 4455, password: '' };
+      assert.strictEqual(isObsScenesEnabled(obs), true);
+    });
+  });
+
+  describe('createObsScenesService', () => {
+    it('returns null when WebSocket config is not set', () => {
+      const config: ObsConfig = { path: '/usr/bin/obs' };
+      const result = createObsScenesService(config, logger as unknown as Logger);
+      assert.strictEqual(result, null);
+    });
+
+    it('returns service with getScenes, getCurrentScene, setScene when config is set', () => {
+      const config: ObsConfig = {
+        path: '/usr/bin/obs',
+        host: 'localhost',
+        port: 4455,
+        password: 'secret',
+      };
+      const result = createObsScenesService(config, logger as unknown as Logger);
+      assert.ok(result !== null);
+      assert.strictEqual(typeof result!.getScenes, 'function');
+      assert.strictEqual(typeof result!.getCurrentScene, 'function');
+      assert.strictEqual(typeof result!.setScene, 'function');
+    });
+  });
+
+  describe('ObsScenesServiceImpl', () => {
+    it('getScenes returns scene names from client', async () => {
+      const client = createMockClient();
+      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const scenes = await service.getScenes();
+      assert.deepStrictEqual(scenes, ['Scene 1', 'Scene 2']);
+    });
+
+    it('getCurrentScene returns current scene name', async () => {
+      const client = createMockClient();
+      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const current = await service.getCurrentScene();
+      assert.strictEqual(current, 'Scene 1');
+    });
+
+    it('setScene succeeds and logs key=value', async () => {
+      const client = createMockClient();
+      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      await service.setScene('chrome');
+      const logLine = logger.lines.find((l) => l.includes('scene_switch'));
+      assert.ok(logLine);
+      assert.ok(logLine!.includes('to=chrome'));
+      assert.ok(logLine!.includes('success=true'));
+    });
+
+    it('setScene with nonexistent scene rejects with SceneNotFoundError', async () => {
+      const client = createMockClient({
+        async setCurrentProgramScene() {
+          throw new Error('Scene "nonexistent" does not exist');
+        },
+      });
+      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      await assert.rejects(
+        () => service.setScene('nonexistent'),
+        (err: unknown) => {
+          return err instanceof SceneNotFoundError && err.sceneName === 'nonexistent';
+        }
+      );
+    });
+
+    it('getScenes returns empty array when client throws', async () => {
+      const client = createMockClient({
+        async getSceneList() {
+          throw new Error('OBS WebSocket not connected');
+        },
+      });
+      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const scenes = await service.getScenes();
+      assert.deepStrictEqual(scenes, []);
+      const warnLine = logger.lines.find((l) => l.includes('action=get_scenes'));
+      assert.ok(warnLine);
+    });
+
+    it('getCurrentScene returns null when client throws', async () => {
+      const client = createMockClient({
+        async getCurrentProgramScene() {
+          throw new Error('OBS WebSocket not connected');
+        },
+      });
+      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const current = await service.getCurrentScene();
+      assert.strictEqual(current, null);
+      const warnLine = logger.lines.find((l) => l.includes('action=get_current'));
+      assert.ok(warnLine);
+    });
+  });
+});
