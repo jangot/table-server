@@ -15,7 +15,16 @@ import type { AppConfig } from '../src/modules/config/types';
 import type { ChromeWindowMode } from '../src/modules/config/types';
 import { createLogger } from '../src/modules/logger';
 
-function baseConfig(chromeOverrides: { windowMode?: ChromeWindowMode; userDataDir?: string } = {}): AppConfig {
+function baseConfig(
+  chromeOverrides: {
+    windowMode?: ChromeWindowMode;
+    userDataDir?: string;
+    windowWidth?: number;
+    windowHeight?: number;
+    windowPositionX?: number;
+    windowPositionY?: number;
+  } = {}
+): AppConfig {
   return {
     logLevel: 'info',
     chrome: {
@@ -86,6 +95,70 @@ describe('buildChromeArgs', () => {
     const config = baseConfig();
     const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
     assert.ok(!args.some((a) => a.startsWith('--user-data-dir=')));
+  });
+
+  it('window size when both width and height set: adds --window-size=WIDTH,HEIGHT', () => {
+    const config = baseConfig({ windowWidth: 1280, windowHeight: 720 });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--window-size=1280,720'));
+  });
+
+  it('window size not set: no --window-size arg', () => {
+    const config = baseConfig();
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.some((a) => a.startsWith('--window-size=')));
+  });
+
+  it('window size only width: no --window-size arg', () => {
+    const config = baseConfig({ windowWidth: 1280 });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.some((a) => a.startsWith('--window-size=')));
+  });
+
+  it('window position when both X and Y set: adds --window-position=X,Y', () => {
+    const config = baseConfig({ windowPositionX: 100, windowPositionY: 200 });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--window-position=100,200'));
+  });
+
+  it('window position not set: no --window-position arg', () => {
+    const config = baseConfig();
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.some((a) => a.startsWith('--window-position=')));
+  });
+
+  it('window position only X: no --window-position arg', () => {
+    const config = baseConfig({ windowPositionX: 50 });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.some((a) => a.startsWith('--window-position=')));
+  });
+
+  it('window size and position together: both args present', () => {
+    const config = baseConfig({
+      windowWidth: 1920,
+      windowHeight: 1080,
+      windowPositionX: 100,
+      windowPositionY: 200,
+    });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--window-size=1920,1080'));
+    assert.ok(args.includes('--window-position=100,200'));
+  });
+
+  it('window size/position with userDataDir and windowMode default: all expected args present', () => {
+    const config = baseConfig({
+      userDataDir: '/tmp/chrome-profile',
+      windowMode: 'default',
+      windowWidth: 800,
+      windowHeight: 600,
+      windowPositionX: 0,
+      windowPositionY: 0,
+    });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--user-data-dir=/tmp/chrome-profile'));
+    assert.ok(args.includes('--window-size=800,600'));
+    assert.ok(args.includes('--window-position=0,0'));
+    assert.ok(args.includes('--remote-debugging-port=9222'));
   });
 
   it('initialUrl appears only as single arg (no shell injection); user URL never in spawn', () => {

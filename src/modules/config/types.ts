@@ -26,6 +26,30 @@ export class ChromeConfig {
   @IsOptional()
   @IsString()
   userDataDir?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(7680)
+  windowWidth?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(7680)
+  windowHeight?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-16384)
+  @Max(16384)
+  windowPositionX?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-16384)
+  @Max(16384)
+  windowPositionY?: number;
 }
 
 export class ObsConfig {

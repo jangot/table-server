@@ -55,6 +55,10 @@ export function validateEnv(): AppConfig {
       readyTimeout: parseOptionalInt(getEnv('CHROME_READY_TIMEOUT')),
       windowMode: getEnv('CHROME_WINDOW_MODE')?.toLowerCase().trim() || 'default',
       userDataDir: getEnv('CHROME_USER_DATA_DIR')?.trim() || undefined,
+      windowWidth: parseOptionalInt(getEnv('CHROME_WINDOW_WIDTH')),
+      windowHeight: parseOptionalInt(getEnv('CHROME_WINDOW_HEIGHT')),
+      windowPositionX: parseOptionalInt(getEnv('CHROME_WINDOW_POSITION_X')),
+      windowPositionY: parseOptionalInt(getEnv('CHROME_WINDOW_POSITION_Y')),
     }),
     obs: plainToInstance(ObsConfig, {
       path: getEnv('OBS_PATH')?.trim(),

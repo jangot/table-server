@@ -6,7 +6,7 @@
 
 | Секция | Поле | Переменные окружения |
 |--------|------|----------------------|
-| `chrome` | Chrome браузер | `CHROME_PATH`, `DEVTOOLS_PORT`, `CHROME_READY_TIMEOUT`, `CHROME_WINDOW_MODE`, `CHROME_USER_DATA_DIR` |
+| `chrome` | Chrome браузер | `CHROME_PATH`, `DEVTOOLS_PORT`, `CHROME_READY_TIMEOUT`, `CHROME_WINDOW_MODE`, `CHROME_USER_DATA_DIR`, `CHROME_WINDOW_WIDTH`, `CHROME_WINDOW_HEIGHT`, `CHROME_WINDOW_POSITION_X`, `CHROME_WINDOW_POSITION_Y` |
 | `obs` | OBS Studio | `OBS_PATH`, `OBS_READY_TIMEOUT`, `OBS_PROFILE_PATH` |
 | `telegram` | Telegram бот | `TELEGRAM_BOT_TOKEN`, `ALLOWED_TELEGRAM_USERS` |
 | `idle` | Idle HTTP сервер | `IDLE_PORT`, `IDLE_VIEWS_PATH` |
@@ -21,6 +21,12 @@
 - `readyTimeout` (number, ≥1, опциональный) — таймаут готовности (мс)
 - `windowMode` ('kiosk' | 'app' | 'fullscreen' | 'default', опциональный) — режим окна
 - `userDataDir` (string, опциональный) — директория пользовательских данных Chrome
+- `windowWidth` (number, 1–7680, опциональный) — ширина окна в пикселях; применяется только вместе с `windowHeight`
+- `windowHeight` (number, 1–7680, опциональный) — высота окна в пикселях; применяется только вместе с `windowWidth`
+- `windowPositionX` (number, опциональный) — координата X левого верхнего угла окна (допустимы отрицательные значения для мультимониторных конфигураций)
+- `windowPositionY` (number, опциональный) — координата Y; позиция применяется только когда заданы обе координаты
+
+В режимах kiosk и fullscreen браузер может игнорировать размер и позицию окна; аргументы `--window-size` и `--window-position` передаются в любом случае при заданных переменных окружения.
 
 ### ObsConfig
 - `path` (string, обязательный) — путь к исполняемому файлу OBS

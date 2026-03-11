@@ -31,5 +31,12 @@ export function buildChromeArgs(
   } else if (mode === 'fullscreen') {
     args.unshift('--start-fullscreen');
   }
+  const { windowWidth, windowHeight, windowPositionX, windowPositionY } = config.chrome;
+  if (windowPositionX !== undefined && windowPositionY !== undefined) {
+    args.unshift(`--window-position=${windowPositionX},${windowPositionY}`);
+  }
+  if (windowWidth !== undefined && windowHeight !== undefined) {
+    args.unshift(`--window-size=${windowWidth},${windowHeight}`);
+  }
   return args;
 }

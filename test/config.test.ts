@@ -38,6 +38,10 @@ describe('config', () => {
       'DEVTOOLS_PORT',
       'CHROME_READY_TIMEOUT',
       'CHROME_WINDOW_MODE',
+      'CHROME_WINDOW_WIDTH',
+      'CHROME_WINDOW_HEIGHT',
+      'CHROME_WINDOW_POSITION_X',
+      'CHROME_WINDOW_POSITION_Y',
       'OBS_READY_TIMEOUT',
       'OBS_PROFILE_PATH',
       'TELEGRAM_BOT_TOKEN',
@@ -146,5 +150,70 @@ describe('config', () => {
     const cfg = validateEnv();
     assert.deepStrictEqual(cfg.telegram.allowedUsers, ['a', 'b']);
     unsetEnv(['TELEGRAM_BOT_TOKEN', 'ALLOWED_TELEGRAM_USERS']);
+  });
+
+  it('CHROME_WINDOW_* env: all four set, config has numeric values', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.CHROME_WINDOW_WIDTH = '1280';
+    process.env.CHROME_WINDOW_HEIGHT = '720';
+    process.env.CHROME_WINDOW_POSITION_X = '100';
+    process.env.CHROME_WINDOW_POSITION_Y = '200';
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.chrome.windowWidth, 1280);
+    assert.strictEqual(cfg.chrome.windowHeight, 720);
+    assert.strictEqual(cfg.chrome.windowPositionX, 100);
+    assert.strictEqual(cfg.chrome.windowPositionY, 200);
+    unsetEnv(['CHROME_WINDOW_WIDTH', 'CHROME_WINDOW_HEIGHT', 'CHROME_WINDOW_POSITION_X', 'CHROME_WINDOW_POSITION_Y']);
+  });
+
+  it('CHROME_WINDOW_* env: not set, config fields are undefined', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.chrome.windowWidth, undefined);
+    assert.strictEqual(cfg.chrome.windowHeight, undefined);
+    assert.strictEqual(cfg.chrome.windowPositionX, undefined);
+    assert.strictEqual(cfg.chrome.windowPositionY, undefined);
+  });
+
+  it('CHROME_WINDOW_WIDTH/HEIGHT boundary: 1 and 7680 are valid', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.CHROME_WINDOW_WIDTH = '1';
+    process.env.CHROME_WINDOW_HEIGHT = '7680';
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.chrome.windowWidth, 1);
+    assert.strictEqual(cfg.chrome.windowHeight, 7680);
+    unsetEnv(['CHROME_WINDOW_WIDTH', 'CHROME_WINDOW_HEIGHT']);
+  });
+
+  it('validateEnv throws when CHROME_WINDOW_WIDTH is 0', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.CHROME_WINDOW_WIDTH = '0';
+    process.env.CHROME_WINDOW_HEIGHT = '720';
+    assert.throws(() => validateEnv(), /windowWidth|chrome/);
+    unsetEnv(['CHROME_WINDOW_WIDTH', 'CHROME_WINDOW_HEIGHT']);
+  });
+
+  it('validateEnv throws when CHROME_WINDOW_WIDTH exceeds 7680', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.CHROME_WINDOW_WIDTH = '7690';
+    process.env.CHROME_WINDOW_HEIGHT = '720';
+    assert.throws(() => validateEnv(), /windowWidth|chrome/);
+    unsetEnv(['CHROME_WINDOW_WIDTH', 'CHROME_WINDOW_HEIGHT']);
+  });
+
+  it('CHROME_WINDOW_POSITION negative: valid for multi-monitor', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.CHROME_WINDOW_POSITION_X = '-100';
+    process.env.CHROME_WINDOW_POSITION_Y = '50';
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.chrome.windowPositionX, -100);
+    assert.strictEqual(cfg.chrome.windowPositionY, 50);
+    unsetEnv(['CHROME_WINDOW_POSITION_X', 'CHROME_WINDOW_POSITION_Y']);
   });
 });
