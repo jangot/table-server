@@ -52,5 +52,10 @@ export async function navigateToUrl(
   }
   const port = deps.config.chrome.devToolsPort ?? 9222;
   const statePath = deps.config.lastUrlStatePath ?? './.last-url';
-  await cdpNavigateToUrl(port, url, statePath, deps.logger);
+  const { windowWidth, windowHeight, deviceScaleFactor } = deps.config.chrome;
+  const viewport =
+    windowWidth !== undefined && windowHeight !== undefined
+      ? { width: windowWidth, height: windowHeight, deviceScaleFactor: deviceScaleFactor ?? 1 }
+      : undefined;
+  await cdpNavigateToUrl(port, url, statePath, deps.logger, { viewport });
 }

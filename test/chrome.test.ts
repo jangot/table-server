@@ -57,10 +57,10 @@ describe('buildChromeArgs', () => {
     assert.ok(args.includes('--remote-debugging-port=9222'));
   });
 
-  it('chromeWindowMode fullscreen: --start-fullscreen at start', () => {
+  it('chromeWindowMode fullscreen: --start-fullscreen present', () => {
     const config = baseConfig({ windowMode: 'fullscreen' });
     const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
-    assert.strictEqual(args[0], '--start-fullscreen');
+    assert.ok(args.includes('--start-fullscreen'));
     assert.ok(args.includes('--remote-debugging-port=9222'));
   });
 
@@ -176,10 +176,41 @@ describe('buildChromeArgs', () => {
     assert.ok(args.includes('--force-device-scale-factor=2'));
   });
 
-  it('deviceScaleFactor undefined: no --force-device-scale-factor arg', () => {
-    const config = baseConfig();
+  it('deviceScaleFactor undefined in default mode: no --force-device-scale-factor arg', () => {
+    const config = baseConfig({ windowMode: 'default' });
     const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
     assert.ok(!args.some((a) => a.startsWith('--force-device-scale-factor=')));
+  });
+
+  it('kiosk mode without deviceScaleFactor: auto-adds --force-device-scale-factor=1', () => {
+    const config = baseConfig({ windowMode: 'kiosk' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--force-device-scale-factor=1'));
+  });
+
+  it('fullscreen mode without deviceScaleFactor: auto-adds --force-device-scale-factor=1', () => {
+    const config = baseConfig({ windowMode: 'fullscreen' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--force-device-scale-factor=1'));
+  });
+
+  it('kiosk mode with explicit deviceScaleFactor=2: uses 2, not 1', () => {
+    const config = baseConfig({ windowMode: 'kiosk', deviceScaleFactor: 2 });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--force-device-scale-factor=2'));
+    assert.ok(!args.includes('--force-device-scale-factor=1'));
+  });
+
+  it('default mode without deviceScaleFactor: no --force-device-scale-factor', () => {
+    const config = baseConfig({ windowMode: 'default' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.some((a) => a.startsWith('--force-device-scale-factor=')));
+  });
+
+  it('kiosk=true flag without windowMode: auto-adds --force-device-scale-factor=1', () => {
+    const config = baseConfig({ kiosk: true });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--force-device-scale-factor=1'));
   });
 
   it('kiosk mode: includes --noerrdialogs and --disable-infobars', () => {

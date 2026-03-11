@@ -41,8 +41,9 @@ export function buildChromeArgs(
   if (windowWidth !== undefined && windowHeight !== undefined) {
     args.unshift(`--window-size=${windowWidth},${windowHeight}`);
   }
-  if (config.chrome.deviceScaleFactor !== undefined) {
-    args.unshift(`--force-device-scale-factor=${config.chrome.deviceScaleFactor}`);
+  const scaleFactor = config.chrome.deviceScaleFactor ?? (useKiosk || mode === 'fullscreen' ? 1 : undefined);
+  if (scaleFactor !== undefined) {
+    args.unshift(`--force-device-scale-factor=${scaleFactor}`);
   }
   if (config.chrome.ozonePlatform) {
     args.unshift(`--ozone-platform=${config.chrome.ozonePlatform}`);
