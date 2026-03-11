@@ -17,14 +17,14 @@ export function buildChromeArgs(
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-default-apps',
-    // '--kiosk',
     initialUrl,
   ];
   if (userDataDir) {
     args.unshift(`--user-data-dir=${userDataDir}`);
   }
   const mode = config.chrome.windowMode ?? 'default';
-  if (mode === 'kiosk') {
+  const useKiosk = config.chrome.kiosk === true || mode === 'kiosk';
+  if (useKiosk) {
     args.unshift('--kiosk');
   } else if (mode === 'app') {
     args.pop(); // remove initialUrl from end

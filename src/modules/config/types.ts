@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsIn, Min, Max, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsIn, Min, Max, IsArray, ValidateNested, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export type ChromeWindowMode = 'kiosk' | 'app' | 'fullscreen' | 'default';
@@ -22,6 +22,10 @@ export class ChromeConfig {
   @IsOptional()
   @IsIn(CHROME_WINDOW_MODES)
   windowMode?: ChromeWindowMode;
+
+  @IsOptional()
+  @IsBoolean()
+  kiosk?: boolean;
 
   @IsOptional()
   @IsString()
