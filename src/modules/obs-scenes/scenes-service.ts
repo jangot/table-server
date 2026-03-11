@@ -5,12 +5,13 @@
 
 import type { Logger } from '../logger';
 import type { ObsWebSocketClient } from './client';
-import type { ObsScenesService } from './types';
+import type { ObsScenesService, SceneConfigEntry, SceneForDisplay } from './types';
 import { SceneNotFoundError } from './types';
 
 export interface ObsScenesServiceConfig {
   client: ObsWebSocketClient;
   logger: Logger;
+  scenesConfig?: SceneConfigEntry[] | null;
 }
 
 export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsScenesService {
@@ -23,6 +24,24 @@ export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsS
         return scenes.map((s) => s.sceneName).filter(Boolean);
       } catch (err) {
         logger.warn(`obs_scenes action=get_scenes error=${err instanceof Error ? err.message : String(err)}`);
+        return [];
+      }
+    },
+
+    async getScenesForDisplay(): Promise<SceneForDisplay[]> {
+      try {
+        const { scenes } = await client.getSceneList();
+        const names = scenes.map((s) => s.sceneName).filter(Boolean);
+        const configMap = new Map((config.scenesConfig ?? []).map((e) => [e.name, e]));
+        return names.map((name) => {
+          const entry = configMap.get(name);
+          const out: SceneForDisplay = { name, enabled: entry?.enabled ?? true };
+          if (entry?.title !== undefined) out.title = entry.title;
+          if (entry?.type !== undefined) out.type = entry.type;
+          return out;
+        });
+      } catch (err) {
+        logger.warn(`obs_scenes action=get_scenes_for_display error=${err instanceof Error ? err.message : String(err)}`);
         return [];
       }
     },

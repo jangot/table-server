@@ -9,9 +9,10 @@ import { isObsScenesEnabled } from '../config';
 import type { Logger } from '../logger';
 import { createObsWebSocketClient } from './client';
 import { createObsScenesServiceImpl } from './scenes-service';
+import { loadScenesConfigSync } from './scenes-config';
 import type { ObsScenesService } from './types';
 
-export type { ObsScenesService } from './types';
+export type { ObsScenesService, SceneConfigEntry, SceneForDisplay } from './types';
 export { SceneNotFoundError } from './types';
 export { isObsScenesEnabled } from '../config';
 
@@ -19,8 +20,13 @@ export { isObsScenesEnabled } from '../config';
  * Create OBS Scenes service if WebSocket config is enabled (host, port, password set).
  * Starts connection in background; does not wait for OBS to be available.
  * Returns null if config is not set.
+ * Optional scenesConfigPath loads JSON config for UI enrichment (title, type, enabled).
  */
-export function createObsScenesService(config: ObsConfig, logger: Logger): ObsScenesService | null {
+export function createObsScenesService(
+  config: ObsConfig,
+  logger: Logger,
+  scenesConfigPath?: string
+): ObsScenesService | null {
   if (!isObsScenesEnabled(config) || config.host == null || config.port == null || config.password === undefined) {
     return null;
   }
@@ -31,5 +37,6 @@ export function createObsScenesService(config: ObsConfig, logger: Logger): ObsSc
     logger,
   });
   client.connect();
-  return createObsScenesServiceImpl({ client, logger });
+  const scenesConfig = loadScenesConfigSync(scenesConfigPath);
+  return createObsScenesServiceImpl({ client, logger, scenesConfig });
 }

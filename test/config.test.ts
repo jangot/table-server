@@ -44,6 +44,7 @@ describe('config', () => {
       'CHROME_WINDOW_POSITION_Y',
       'OBS_READY_TIMEOUT',
       'OBS_PROFILE_PATH',
+      'SCENES_CONFIG_PATH',
       'OBS_HOST',
       'OBS_PORT',
       'OBS_PASSWORD',
@@ -124,6 +125,15 @@ describe('config', () => {
     const config = getConfig();
     assert.strictEqual(config.obs.profilePath, '/home/user/.config/obs-studio');
     delete process.env.OBS_PROFILE_PATH;
+  });
+
+  it('optional SCENES_CONFIG_PATH is in config when set', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.SCENES_CONFIG_PATH = ' /path/to/scenes.json ';
+    const config = getConfig();
+    assert.strictEqual(config.scenesConfigPath, '/path/to/scenes.json');
+    delete process.env.SCENES_CONFIG_PATH;
   });
 
   it('TELEGRAM_BOT_TOKEN and ALLOWED_TELEGRAM_USERS are in config when set', () => {

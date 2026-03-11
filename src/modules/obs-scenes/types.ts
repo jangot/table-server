@@ -3,8 +3,25 @@
  * Implementation is in scenes-service.ts and uses the WebSocket client.
  */
 
+/** One entry from scenes config JSON (§5). */
+export interface SceneConfigEntry {
+  name: string;
+  title?: string;
+  type?: string;
+  enabled?: boolean;
+}
+
+/** Scene for UI: name from OBS, optional title/type/enabled from config. */
+export interface SceneForDisplay {
+  name: string;
+  title?: string;
+  type?: string;
+  enabled?: boolean;
+}
+
 export interface ObsScenesService {
   getScenes(): Promise<string[]>;
+  getScenesForDisplay(): Promise<SceneForDisplay[]>;
   getCurrentScene(): Promise<string | null>;
   setScene(name: string): Promise<void>;
 }

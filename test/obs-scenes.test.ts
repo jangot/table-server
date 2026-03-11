@@ -94,7 +94,7 @@ describe('obs-scenes', () => {
       assert.strictEqual(result, null);
     });
 
-    it('returns service with getScenes, getCurrentScene, setScene when config is set', () => {
+    it('returns service with getScenes, getCurrentScene, setScene, getScenesForDisplay when config is set', () => {
       const config: ObsConfig = {
         path: '/usr/bin/obs',
         host: 'localhost',
@@ -106,6 +106,7 @@ describe('obs-scenes', () => {
       assert.strictEqual(typeof result!.getScenes, 'function');
       assert.strictEqual(typeof result!.getCurrentScene, 'function');
       assert.strictEqual(typeof result!.setScene, 'function');
+      assert.strictEqual(typeof result!.getScenesForDisplay, 'function');
     });
   });
 
@@ -172,6 +173,50 @@ describe('obs-scenes', () => {
       const current = await service.getCurrentScene();
       assert.strictEqual(current, null);
       const warnLine = logger.lines.find((l) => l.includes('action=get_current'));
+      assert.ok(warnLine);
+    });
+
+    it('getScenesForDisplay without config returns names from OBS with enabled true', async () => {
+      const client = createMockClient();
+      const service = createObsScenesServiceImpl({
+        client,
+        logger: logger as unknown as Logger,
+        scenesConfig: null,
+      });
+      const display = await service.getScenesForDisplay();
+      assert.deepStrictEqual(display, [
+        { name: 'Scene 1', enabled: true },
+        { name: 'Scene 2', enabled: true },
+      ]);
+    });
+
+    it('getScenesForDisplay with config enriches scenes from config', async () => {
+      const client = createMockClient();
+      const scenesConfig = [
+        { name: 'Scene 1', title: 'First Scene', type: 'working', enabled: false },
+      ];
+      const service = createObsScenesServiceImpl({
+        client,
+        logger: logger as unknown as Logger,
+        scenesConfig,
+      });
+      const display = await service.getScenesForDisplay();
+      assert.deepStrictEqual(display, [
+        { name: 'Scene 1', title: 'First Scene', type: 'working', enabled: false },
+        { name: 'Scene 2', enabled: true },
+      ]);
+    });
+
+    it('getScenesForDisplay returns empty array when client throws', async () => {
+      const client = createMockClient({
+        async getSceneList() {
+          throw new Error('OBS WebSocket not connected');
+        },
+      });
+      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const display = await service.getScenesForDisplay();
+      assert.deepStrictEqual(display, []);
+      const warnLine = logger.lines.find((l) => l.includes('action=get_scenes_for_display'));
       assert.ok(warnLine);
     });
   });

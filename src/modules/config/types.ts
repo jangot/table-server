@@ -131,6 +131,10 @@ export class AppConfig {
   @IsString()
   lastUrlStatePath?: string;
 
+  @IsOptional()
+  @IsString()
+  scenesConfigPath?: string;
+
   @ValidateNested()
   @Type(() => ChromeConfig)
   chrome!: ChromeConfig;

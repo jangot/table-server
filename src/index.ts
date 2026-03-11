@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   const obsModule = createObsModule(config, logger);
   await runOrchestrator([chromeModule, obsModule], logger);
 
-  const obsScenesService = createObsScenesService(config.obs, logger);
+  const obsScenesService = createObsScenesService(config.obs, logger, config.scenesConfigPath);
   // obsScenesService reserved for Telegram bot (014) and Web API (015)
   void obsScenesService;
 
