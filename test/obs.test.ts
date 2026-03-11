@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import type { ChildProcess } from 'node:child_process';
@@ -11,15 +12,15 @@ import { createObsModule, isObsAlive, restartObs } from '../src/modules/obs';
 import type { AppConfig } from '../src/modules/config/types';
 import { createLogger } from '../src/modules/logger';
 
-function baseConfig(overrides: Partial<AppConfig> = {}): AppConfig {
+function baseConfig(obsOverrides: { profilePath?: string } = {}): AppConfig {
   return {
-    chromePath: '/usr/bin/chrome',
-    obsPath: '/usr/bin/obs',
-    idlePort: 3000,
-    idleViewsPath: './views',
     logLevel: 'info',
-    ...overrides,
-  };
+    chrome: { path: '/usr/bin/chrome' },
+    obs: { path: '/usr/bin/obs', ...obsOverrides },
+    idle: { port: 3000, viewsPath: './views' },
+    telegram: {},
+    watchdog: {},
+  } as unknown as AppConfig;
 }
 
 describe('buildObsArgs', () => {
@@ -31,9 +32,7 @@ describe('buildObsArgs', () => {
   });
 
   it('returns array with --profile= when obsProfilePath set', () => {
-    const config = baseConfig({
-      obsProfilePath: '/home/user/.config/obs-studio',
-    });
+    const config = baseConfig({ profilePath: '/home/user/.config/obs-studio' });
     const args = buildObsArgs(config);
     assert.ok(Array.isArray(args));
     assert.strictEqual(args.length, 1);
@@ -41,7 +40,7 @@ describe('buildObsArgs', () => {
   });
 
   it('returns only config-derived args; no user input in args', () => {
-    const config = baseConfig({ obsProfilePath: '/tmp/obs' });
+    const config = baseConfig({ profilePath: '/tmp/obs' });
     const args = buildObsArgs(config);
     assert.ok(Array.isArray(args));
     for (const a of args) {

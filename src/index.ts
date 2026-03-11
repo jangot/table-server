@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import 'dotenv/config';
 import { getConfig } from './modules/config';
 import { createLogger } from './modules/logger';
@@ -23,7 +24,7 @@ async function main(): Promise<void> {
   const obsModule = createObsModule(config, logger);
   await runOrchestrator([chromeModule, obsModule], logger);
 
-  if (config.watchdogCheckIntervalMs != null && config.watchdogCheckIntervalMs > 0) {
+  if (config.watchdog.checkIntervalMs != null && config.watchdog.checkIntervalMs > 0) {
     startWatchdog(config, logger, {
       isChromeAlive,
       restartChrome,
@@ -43,7 +44,7 @@ async function main(): Promise<void> {
     await navigateToUrl(lastUrl, { config, logger });
   }
 
-  if (config.telegramBotToken) {
+  if (config.telegram.botToken) {
     const allowedUsers = createAllowedUsersChecker(config);
     startBot({
       config,

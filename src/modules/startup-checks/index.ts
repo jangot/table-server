@@ -20,6 +20,6 @@ async function checkExecutable(
  * On failure: logs and process.exit(1).
  */
 export async function checkChromeAndObs(config: AppConfig, logger: Logger): Promise<void> {
-  await checkExecutable(config.chromePath, 'Chrome', logger);
-  await checkExecutable(config.obsPath, 'OBS', logger);
+  await checkExecutable(config.chrome.path, 'Chrome', logger);
+  await checkExecutable(config.obs.path, 'OBS', logger);
 }

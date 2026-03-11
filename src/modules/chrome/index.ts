@@ -11,11 +11,11 @@ export function createChromeModule(config: AppConfig, logger: Logger): AppModule
   return {
     name: 'Chrome',
     async start() {
-      const port = config.devToolsPort ?? 9222;
-      const timeoutMs = config.chromeReadyTimeout ?? 30000;
-      const idleUrl = `http://localhost:${config.idlePort}/`;
+      const port = config.chrome.devToolsPort ?? 9222;
+      const timeoutMs = config.chrome.readyTimeout ?? 30000;
+      const idleUrl = `http://localhost:${config.idle.port}/`;
       const args = buildChromeArgs(config, port, idleUrl);
-      await launchChrome(config.chromePath, args, port, timeoutMs, logger);
+      await launchChrome(config.chrome.path, args, port, timeoutMs, logger);
     },
   };
 }
@@ -33,11 +33,11 @@ export function isChromeAlive(_config: AppConfig): boolean {
 
 export async function restartChrome(config: AppConfig, logger: Logger): Promise<void> {
   killChromeProcess();
-  const port = config.devToolsPort ?? 9222;
-  const timeoutMs = config.chromeReadyTimeout ?? 30000;
-  const idleUrl = `http://localhost:${config.idlePort}/`;
+  const port = config.chrome.devToolsPort ?? 9222;
+  const timeoutMs = config.chrome.readyTimeout ?? 30000;
+  const idleUrl = `http://localhost:${config.idle.port}/`;
   const args = buildChromeArgs(config, port, idleUrl);
-  await launchChrome(config.chromePath, args, port, timeoutMs, logger);
+  await launchChrome(config.chrome.path, args, port, timeoutMs, logger);
   const statePath = config.lastUrlStatePath ?? './.last-url';
   const lastUrl = await readLastUrl(statePath);
   await navigateToUrl(lastUrl ?? idleUrl, { config, logger });
@@ -50,7 +50,7 @@ export async function navigateToUrl(
   if (getChromeProcess() == null) {
     throw new Error('Chrome is not running');
   }
-  const port = deps.config.devToolsPort ?? 9222;
+  const port = deps.config.chrome.devToolsPort ?? 9222;
   const statePath = deps.config.lastUrlStatePath ?? './.last-url';
   await cdpNavigateToUrl(port, url, statePath, deps.logger);
 }

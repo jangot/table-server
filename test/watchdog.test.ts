@@ -1,18 +1,19 @@
+import 'reflect-metadata';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { startWatchdog } from '../src/modules/watchdog';
 import type { AppConfig } from '../src/modules/config/types';
 import { createLogger } from '../src/modules/logger';
 
-function baseConfig(overrides: Partial<AppConfig> = {}): AppConfig {
+function baseConfig(watchdogOverrides: { checkIntervalMs?: number; restartMinIntervalMs?: number } = {}): AppConfig {
   return {
-    chromePath: '/usr/bin/chrome',
-    obsPath: '/usr/bin/obs',
-    idlePort: 3000,
-    idleViewsPath: './views',
     logLevel: 'info',
-    ...overrides,
-  };
+    chrome: { path: '/usr/bin/chrome' },
+    obs: { path: '/usr/bin/obs' },
+    idle: { port: 3000, viewsPath: './views' },
+    telegram: {},
+    watchdog: { ...watchdogOverrides },
+  } as unknown as AppConfig;
 }
 
 describe('startWatchdog', () => {
@@ -29,7 +30,7 @@ describe('startWatchdog', () => {
   });
 
   it('resolves immediately when watchdogCheckIntervalMs is 0', async () => {
-    const config = baseConfig({ watchdogCheckIntervalMs: 0 });
+    const config = baseConfig({ checkIntervalMs: 0 });
     const logger = createLogger('info');
     const deps = {
       isChromeAlive: () => true,
@@ -41,7 +42,7 @@ describe('startWatchdog', () => {
   });
 
   it('runs check and calls restartChrome when Chrome is dead', async () => {
-    const config = baseConfig({ watchdogCheckIntervalMs: 10000 });
+    const config = baseConfig({ checkIntervalMs: 10000 });
     const logger = createLogger('info');
     let chromeRestartCalls = 0;
     const deps = {
@@ -58,7 +59,7 @@ describe('startWatchdog', () => {
   });
 
   it('runs check and calls restartObs when OBS is dead', async () => {
-    const config = baseConfig({ watchdogCheckIntervalMs: 10000 });
+    const config = baseConfig({ checkIntervalMs: 10000 });
     const logger = createLogger('info');
     let obsRestartCalls = 0;
     const deps = {
@@ -75,7 +76,7 @@ describe('startWatchdog', () => {
   });
 
   it('does not call restart when both Chrome and OBS are alive', async () => {
-    const config = baseConfig({ watchdogCheckIntervalMs: 10000 });
+    const config = baseConfig({ checkIntervalMs: 10000 });
     const logger = createLogger('info');
     let chromeRestartCalls = 0;
     let obsRestartCalls = 0;

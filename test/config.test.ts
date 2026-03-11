@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import {
@@ -49,12 +50,12 @@ describe('config', () => {
     resetConfigForTesting();
     setEnv(REQUIRED);
     const config = getConfig();
-    assert.strictEqual(config.chromePath, '/usr/bin/chrome');
-    assert.strictEqual(config.obsPath, '/usr/bin/obs');
-    assert.strictEqual(config.idlePort, 3000);
-    assert.strictEqual(config.idleViewsPath, './views');
+    assert.strictEqual(config.chrome.path, '/usr/bin/chrome');
+    assert.strictEqual(config.obs.path, '/usr/bin/obs');
+    assert.strictEqual(config.idle.port, 3000);
+    assert.strictEqual(config.idle.viewsPath, './views');
     assert.strictEqual(config.logLevel, 'info');
-    assert.strictEqual(config.devToolsPort, undefined);
+    assert.strictEqual(config.chrome.devToolsPort, undefined);
   });
 
   it('optional DEVTOOLS_PORT is parsed', () => {
@@ -62,7 +63,7 @@ describe('config', () => {
     setEnv(REQUIRED);
     process.env.DEVTOOLS_PORT = '9222';
     const config = getConfig();
-    assert.strictEqual(config.devToolsPort, 9222);
+    assert.strictEqual(config.chrome.devToolsPort, 9222);
     delete process.env.DEVTOOLS_PORT;
   });
 
@@ -72,7 +73,7 @@ describe('config', () => {
     delete process.env.CHROME_PATH;
     assert.throws(
       () => validateEnv(),
-      /Missing required environment variable: CHROME_PATH/
+      /chrome\.path/
     );
     setEnv(REQUIRED);
   });
@@ -83,7 +84,7 @@ describe('config', () => {
     process.env.IDLE_PORT = 'abc';
     assert.throws(
       () => validateEnv(),
-      /Invalid port in IDLE_PORT/
+      /idle\.port/
     );
     setEnv(REQUIRED);
   });
@@ -92,9 +93,9 @@ describe('config', () => {
     resetConfigForTesting();
     setEnv(REQUIRED);
     process.env.IDLE_PORT = '0';
-    assert.throws(() => validateEnv(), /Invalid port/);
+    assert.throws(() => validateEnv(), /idle\.port/);
     process.env.IDLE_PORT = '70000';
-    assert.throws(() => validateEnv(), /Invalid port/);
+    assert.throws(() => validateEnv(), /idle\.port/);
     setEnv(REQUIRED);
   });
 
@@ -104,7 +105,7 @@ describe('config', () => {
     process.env.LOG_LEVEL = 'trace';
     assert.throws(
       () => validateEnv(),
-      /Invalid LOG_LEVEL.*expected one of/
+      /logLevel/
     );
     setEnv(REQUIRED);
   });
@@ -114,7 +115,7 @@ describe('config', () => {
     setEnv(REQUIRED);
     process.env.OBS_PROFILE_PATH = ' /home/user/.config/obs-studio ';
     const config = getConfig();
-    assert.strictEqual(config.obsProfilePath, '/home/user/.config/obs-studio');
+    assert.strictEqual(config.obs.profilePath, '/home/user/.config/obs-studio');
     delete process.env.OBS_PROFILE_PATH;
   });
 
@@ -124,8 +125,8 @@ describe('config', () => {
     process.env.TELEGRAM_BOT_TOKEN = ' 123:ABC  ';
     process.env.ALLOWED_TELEGRAM_USERS = ' 123456789 , johndoe ';
     const cfg = validateEnv();
-    assert.strictEqual(cfg.telegramBotToken, '123:ABC');
-    assert.deepStrictEqual(cfg.allowedTelegramUsers, ['123456789', 'johndoe']);
+    assert.strictEqual(cfg.telegram.botToken, '123:ABC');
+    assert.deepStrictEqual(cfg.telegram.allowedUsers, ['123456789', 'johndoe']);
     unsetEnv(['TELEGRAM_BOT_TOKEN', 'ALLOWED_TELEGRAM_USERS']);
   });
 
@@ -134,7 +135,7 @@ describe('config', () => {
     setEnv(REQUIRED);
     delete process.env.TELEGRAM_BOT_TOKEN;
     const cfg = validateEnv();
-    assert.strictEqual(cfg.telegramBotToken, undefined);
+    assert.strictEqual(cfg.telegram.botToken, undefined);
   });
 
   it('ALLOWED_TELEGRAM_USERS with spaces and commas parses to array without empty elements', () => {
@@ -143,7 +144,7 @@ describe('config', () => {
     process.env.TELEGRAM_BOT_TOKEN = 'x';
     process.env.ALLOWED_TELEGRAM_USERS = ' a , , b ,  ';
     const cfg = validateEnv();
-    assert.deepStrictEqual(cfg.allowedTelegramUsers, ['a', 'b']);
+    assert.deepStrictEqual(cfg.telegram.allowedUsers, ['a', 'b']);
     unsetEnv(['TELEGRAM_BOT_TOKEN', 'ALLOWED_TELEGRAM_USERS']);
   });
 });

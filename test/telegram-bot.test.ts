@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { handleStatus, handleIdle, handleRestart, handleText } from '../src/modules/telegram-bot/handlers';
@@ -8,14 +9,13 @@ import type { Logger } from '../src/modules/logger';
 
 const idlePort = 3999;
 const testConfig: AppConfig = {
-  chromePath: '/usr/bin/chrome',
-  obsPath: '/usr/bin/obs',
-  idlePort,
-  idleViewsPath: './views',
   logLevel: 'info',
-  telegramBotToken: 'test-token',
-  allowedTelegramUsers: ['123', 'alice'],
-};
+  chrome: { path: '/usr/bin/chrome' },
+  obs: { path: '/usr/bin/obs' },
+  idle: { port: idlePort, viewsPath: './views' },
+  telegram: { botToken: 'test-token', allowedUsers: ['123', 'alice'] },
+  watchdog: {},
+} as unknown as AppConfig;
 
 const allowedUser = { id: 123, username: 'alice' };
 const disallowedUser = { id: 456, username: 'bob' };

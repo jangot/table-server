@@ -2,7 +2,7 @@ import type { AppConfig } from '../config/types';
 import type { AllowedUsersChecker } from './types';
 
 export function createAllowedUsersChecker(config: AppConfig): AllowedUsersChecker {
-  const list = config.allowedTelegramUsers ?? [];
+  const list = config.telegram.allowedUsers ?? [];
   return {
     isAllowed(identifier: { id?: number; username?: string }): boolean {
       if (list.length === 0) return false;

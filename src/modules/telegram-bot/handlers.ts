@@ -44,7 +44,7 @@ export async function handleIdle(ctx: CommandContext, deps: TelegramBotDeps): Pr
     await ctx.reply('Система не готова.').catch(() => {});
     return;
   }
-  const idleUrl = `http://localhost:${deps.config.idlePort}/`;
+  const idleUrl = `http://localhost:${deps.config.idle.port}/`;
   try {
     await deps.navigateToUrl(idleUrl, { config: deps.config, logger: deps.logger });
     deps.logger.info('Telegram bot: remote command processed', {

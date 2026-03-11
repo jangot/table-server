@@ -16,8 +16,8 @@ export function createObsModule(config: AppConfig, logger: Logger): AppModule {
 
   function run(): Promise<void> {
     const args = buildObsArgs(config);
-    const timeoutMs = config.obsReadyTimeout ?? 10000;
-    return launchObs(config.obsPath, args, timeoutMs, logger);
+    const timeoutMs = config.obs.readyTimeout ?? 10000;
+    return launchObs(config.obs.path, args, timeoutMs, logger);
   }
 
   function scheduleRestart(): void {

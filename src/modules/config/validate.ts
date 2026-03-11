@@ -1,142 +1,87 @@
-import type { AppConfig } from './types';
-
-const LOG_LEVELS: AppConfig['logLevel'][] = ['info', 'warn', 'error', 'debug'];
-
-const CHROME_WINDOW_MODES: AppConfig['chromeWindowMode'][] = [
-  'kiosk',
-  'app',
-  'fullscreen',
-  'default',
-];
+import 'reflect-metadata';
+import { validateSync, ValidationError } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
+import {
+  AppConfig,
+  ChromeConfig,
+  ObsConfig,
+  TelegramConfig,
+  IdleConfig,
+  WatchdogConfig,
+} from './types';
 
 function getEnv(name: string): string | undefined {
   return process.env[name];
 }
 
-function requireEnv(name: string): string {
-  const value = getEnv(name);
-  if (value === undefined || value.trim() === '') {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value.trim();
-}
-
-function parsePort(name: string, value: string): number {
-  const num = parseInt(value, 10);
-  if (Number.isNaN(num) || num < 1 || num > 65535) {
-    throw new Error(`Invalid port in ${name}: "${value}" (expected 1-65535)`);
-  }
-  return num;
-}
-
-function parseLogLevel(name: string, value: string): AppConfig['logLevel'] {
-  const normalized = value.toLowerCase().trim();
-  if (!LOG_LEVELS.includes(normalized as AppConfig['logLevel'])) {
-    throw new Error(`Invalid ${name}: "${value}" (expected one of: ${LOG_LEVELS.join(', ')})`);
-  }
-  return normalized as AppConfig['logLevel'];
-}
-
-function parseOptionalPort(name: string, value: string | undefined): number | undefined {
+function parseOptionalInt(value: string | undefined): number | undefined {
   if (value === undefined || value.trim() === '') return undefined;
-  const num = parseInt(value.trim(), 10);
-  if (Number.isNaN(num) || num < 1 || num > 65535) {
-    throw new Error(`Invalid port in ${name}: "${value}" (expected 1-65535)`);
-  }
-  return num;
+  const n = parseInt(value.trim(), 10);
+  return Number.isNaN(n) ? undefined : n;
 }
 
-function parseOptionalPositiveInt(
-  name: string,
-  value: string | undefined
-): number | undefined {
-  if (value === undefined || value.trim() === '') return undefined;
-  const num = parseInt(value.trim(), 10);
-  if (Number.isNaN(num) || num < 1) {
-    throw new Error(`Invalid ${name}: "${value}" (expected positive integer)`);
+/** Рекурсивно собирает текстовые сообщения из массива ValidationError */
+function collectMessages(errors: ValidationError[], prefix = ''): string[] {
+  const messages: string[] = [];
+  for (const err of errors) {
+    const path = prefix ? `${prefix}.${err.property}` : err.property;
+    if (err.constraints) {
+      messages.push(...Object.values(err.constraints).map((m) => `${path}: ${m}`));
+    }
+    if (err.children?.length) {
+      messages.push(...collectMessages(err.children, path));
+    }
   }
-  return num;
-}
-
-function parseChromeWindowMode(
-  name: string,
-  value: string | undefined
-): AppConfig['chromeWindowMode'] | undefined {
-  if (value === undefined || value.trim() === '') return undefined;
-  const normalized = value.toLowerCase().trim() as AppConfig['chromeWindowMode'];
-  if (!CHROME_WINDOW_MODES.includes(normalized)) {
-    throw new Error(
-      `Invalid ${name}: "${value}" (expected one of: ${CHROME_WINDOW_MODES.join(', ')})`
-    );
-  }
-  return normalized;
+  return messages;
 }
 
 /**
  * Read and validate environment variables, return typed config.
- * On validation error: throws Error with a clear message.
+ * On validation error: throws Error listing all validation issues.
  */
 export function validateEnv(): AppConfig {
-  const chromePath = requireEnv('CHROME_PATH');
-  const obsPath = requireEnv('OBS_PATH');
-  const idlePort = parsePort('IDLE_PORT', requireEnv('IDLE_PORT'));
-  const idleViewsPath = requireEnv('IDLE_VIEWS_PATH');
-  const logLevel = parseLogLevel('LOG_LEVEL', requireEnv('LOG_LEVEL'));
-
-  const devToolsPort = parseOptionalPort('DEVTOOLS_PORT', getEnv('DEVTOOLS_PORT'));
-  const chromeReadyTimeout = parseOptionalPositiveInt(
-    'CHROME_READY_TIMEOUT',
-    getEnv('CHROME_READY_TIMEOUT')
-  );
-  const obsReadyTimeout = parseOptionalPositiveInt(
-    'OBS_READY_TIMEOUT',
-    getEnv('OBS_READY_TIMEOUT')
-  );
-  const chromeWindowMode = parseChromeWindowMode(
-    'CHROME_WINDOW_MODE',
-    getEnv('CHROME_WINDOW_MODE')
-  );
-
-  const lastUrlStatePath = getEnv('LAST_URL_STATE_PATH')?.trim();
-  const chromeUserDataDir = getEnv('CHROME_USER_DATA_DIR')?.trim();
-  const obsProfilePath = getEnv('OBS_PROFILE_PATH')?.trim();
-
-  const watchdogCheckIntervalMs = parseOptionalPositiveInt(
-    'WATCHDOG_CHECK_INTERVAL_MS',
-    getEnv('WATCHDOG_CHECK_INTERVAL_MS')
-  );
-  const watchdogRestartMinIntervalMs = parseOptionalPositiveInt(
-    'WATCHDOG_RESTART_MIN_INTERVAL_MS',
-    getEnv('WATCHDOG_RESTART_MIN_INTERVAL_MS')
-  );
-
-  const telegramBotToken = getEnv('TELEGRAM_BOT_TOKEN')?.trim();
   const allowedRaw = getEnv('ALLOWED_TELEGRAM_USERS');
   const allowedTelegramUsers =
     allowedRaw === undefined || allowedRaw.trim() === ''
       ? undefined
-      : allowedRaw
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
+      : allowedRaw.split(',').map((s) => s.trim()).filter(Boolean);
 
-  return {
-    chromePath,
-    obsPath,
-    idlePort,
-    idleViewsPath,
-    logLevel,
-    devToolsPort,
-    chromeReadyTimeout,
-    chromeWindowMode: chromeWindowMode ?? 'default',
-    obsReadyTimeout,
-    lastUrlStatePath: lastUrlStatePath || undefined,
-    chromeUserDataDir: chromeUserDataDir || undefined,
-    obsProfilePath: obsProfilePath || undefined,
-    watchdogCheckIntervalMs: watchdogCheckIntervalMs ?? undefined,
-    watchdogRestartMinIntervalMs: watchdogRestartMinIntervalMs ?? undefined,
-    ...(telegramBotToken ? { telegramBotToken } : {}),
-    allowedTelegramUsers:
-      allowedTelegramUsers?.length ? allowedTelegramUsers : undefined,
+  const plain = {
+    logLevel: getEnv('LOG_LEVEL')?.toLowerCase().trim(),
+    lastUrlStatePath: getEnv('LAST_URL_STATE_PATH')?.trim() || undefined,
+    chrome: plainToInstance(ChromeConfig, {
+      path: getEnv('CHROME_PATH')?.trim(),
+      devToolsPort: parseOptionalInt(getEnv('DEVTOOLS_PORT')),
+      readyTimeout: parseOptionalInt(getEnv('CHROME_READY_TIMEOUT')),
+      windowMode: getEnv('CHROME_WINDOW_MODE')?.toLowerCase().trim() || 'default',
+      userDataDir: getEnv('CHROME_USER_DATA_DIR')?.trim() || undefined,
+    }),
+    obs: plainToInstance(ObsConfig, {
+      path: getEnv('OBS_PATH')?.trim(),
+      readyTimeout: parseOptionalInt(getEnv('OBS_READY_TIMEOUT')),
+      profilePath: getEnv('OBS_PROFILE_PATH')?.trim() || undefined,
+    }),
+    telegram: plainToInstance(TelegramConfig, {
+      botToken: getEnv('TELEGRAM_BOT_TOKEN')?.trim() || undefined,
+      allowedUsers: allowedTelegramUsers,
+    }),
+    idle: plainToInstance(IdleConfig, {
+      port: parseOptionalInt(getEnv('IDLE_PORT')),
+      viewsPath: getEnv('IDLE_VIEWS_PATH')?.trim(),
+    }),
+    watchdog: plainToInstance(WatchdogConfig, {
+      checkIntervalMs: parseOptionalInt(getEnv('WATCHDOG_CHECK_INTERVAL_MS')),
+      restartMinIntervalMs: parseOptionalInt(getEnv('WATCHDOG_RESTART_MIN_INTERVAL_MS')),
+    }),
   };
+
+  const instance = plainToInstance(AppConfig, plain);
+  const errors = validateSync(instance, { whitelist: false });
+
+  if (errors.length > 0) {
+    const messages = collectMessages(errors);
+    throw new Error(`Config validation failed:\n${messages.join('\n')}`);
+  }
+
+  return instance;
 }

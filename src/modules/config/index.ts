@@ -1,5 +1,6 @@
+import 'reflect-metadata';
 import { validateEnv } from './validate';
-import type { AppConfig } from './types';
+import { AppConfig } from './types';
 
 let cached: AppConfig | null = null;
 
@@ -27,5 +28,5 @@ export function resetConfigForTesting(): void {
   cached = null;
 }
 
-export type { AppConfig } from './types';
+export { AppConfig } from './types';
 export { validateEnv } from './validate';

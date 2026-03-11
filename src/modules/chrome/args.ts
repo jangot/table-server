@@ -11,7 +11,7 @@ export function buildChromeArgs(
   initialUrl: string
 ): string[] {
   const port = String(devToolsPort);
-  const userDataDir = config.chromeUserDataDir;
+  const userDataDir = config.chrome.userDataDir;
   const args = [
     `--remote-debugging-port=${port}`,
     '--no-first-run',
@@ -22,7 +22,7 @@ export function buildChromeArgs(
   if (userDataDir) {
     args.unshift(`--user-data-dir=${userDataDir}`);
   }
-  const mode = config.chromeWindowMode ?? 'default';
+  const mode = config.chrome.windowMode ?? 'default';
   if (mode === 'kiosk') {
     args.unshift('--kiosk');
   } else if (mode === 'app') {

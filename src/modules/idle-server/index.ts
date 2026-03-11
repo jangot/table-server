@@ -13,7 +13,7 @@ export function setHealthChecker(fn: (() => { chrome: boolean; obs: boolean }) |
  */
 export function startIdleServer(config: AppConfig): Promise<http.Server> {
   const app = express();
-  app.set('views', config.idleViewsPath);
+  app.set('views', config.idle.viewsPath);
   app.set('view engine', 'ejs');
   app.get('/', (_req, res) => res.render('idle'));
 
@@ -27,6 +27,6 @@ export function startIdleServer(config: AppConfig): Promise<http.Server> {
   });
 
   return new Promise((resolve) => {
-    const server = app.listen(config.idlePort, () => resolve(server));
+    const server = app.listen(config.idle.port, () => resolve(server));
   });
 }

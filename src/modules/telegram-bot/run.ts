@@ -4,7 +4,7 @@ import { handleStatus, handleIdle, handleRestart, handleText } from './handlers'
 
 export function createBot(deps: TelegramBotDeps): Telegraf {
   const { config } = deps;
-  const bot = new Telegraf(config.telegramBotToken!);
+  const bot = new Telegraf(config.telegram.botToken!);
 
   bot.command('status', (ctx) => handleStatus(ctx as unknown as import('./handlers').CommandContext, deps));
   bot.command('idle', (ctx) => handleIdle(ctx as unknown as import('./handlers').CommandContext, deps));

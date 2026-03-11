@@ -17,10 +17,10 @@ export function startWatchdog(
   logger: Logger,
   deps: WatchdogDeps
 ): Promise<void> {
-  const intervalMs = config.watchdogCheckIntervalMs ?? 0;
+  const intervalMs = config.watchdog.checkIntervalMs ?? 0;
   if (intervalMs <= 0) return Promise.resolve();
 
-  const minRestartMs = config.watchdogRestartMinIntervalMs ?? 10000;
+  const minRestartMs = config.watchdog.restartMinIntervalMs ?? 10000;
   let lastChromeRestartAt = 0;
   let lastObsRestartAt = 0;
   let status: 'ready' | 'degraded' = 'ready';

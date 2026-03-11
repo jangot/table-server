@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
@@ -9,12 +10,13 @@ describe('idle-server', () => {
   let server: http.Server;
   const testPort = 34567;
   const config: AppConfig = {
-    chromePath: '/usr/bin/chrome',
-    obsPath: '/usr/bin/obs',
-    idlePort: testPort,
-    idleViewsPath: path.join(process.cwd(), 'views'),
     logLevel: 'info',
-  };
+    chrome: { path: '/usr/bin/chrome' },
+    obs: { path: '/usr/bin/obs' },
+    idle: { port: testPort, viewsPath: path.join(process.cwd(), 'views') },
+    telegram: {},
+    watchdog: {},
+  } as unknown as AppConfig;
 
   before(async () => {
     server = await startIdleServer(config);

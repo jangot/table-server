@@ -6,8 +6,8 @@ import type { AppConfig } from '../config/types';
  */
 export function buildObsArgs(config: AppConfig): string[] {
   const args: string[] = [];
-  if (config.obsProfilePath) {
-    args.push(`--profile=${config.obsProfilePath}`);
+  if (config.obs.profilePath) {
+    args.push(`--profile=${config.obs.profilePath}`);
   }
   return args;
 }
