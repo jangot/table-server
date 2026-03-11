@@ -60,6 +60,10 @@ export class ChromeConfig {
   @Min(0.1)
   @Max(10)
   deviceScaleFactor?: number;
+
+  @IsOptional()
+  @IsString()
+  ozonePlatform?: string;
 }
 
 export class ObsConfig {

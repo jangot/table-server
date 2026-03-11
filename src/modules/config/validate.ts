@@ -67,6 +67,13 @@ export function validateEnv(): AppConfig {
       windowPositionX: parseOptionalInt(getEnv('CHROME_WINDOW_POSITION_X')),
       windowPositionY: parseOptionalInt(getEnv('CHROME_WINDOW_POSITION_Y')),
       deviceScaleFactor: parseOptionalFloat(getEnv('CHROME_DEVICE_SCALE_FACTOR')),
+      kiosk: (() => {
+        const raw = getEnv('CHROME_KIOSK')?.toLowerCase().trim();
+        if (raw === 'true' || raw === '1') return true;
+        if (raw === 'false' || raw === '0') return false;
+        return undefined;
+      })(),
+      ozonePlatform: getEnv('CHROME_OZONE_PLATFORM')?.toLowerCase().trim() || undefined,
     }),
     obs: plainToInstance(ObsConfig, {
       path: getEnv('OBS_PATH')?.trim(),

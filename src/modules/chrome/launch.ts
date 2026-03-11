@@ -37,6 +37,7 @@ export async function launchChrome(
   timeoutMs: number,
   logger: Logger
 ): Promise<void> {
+  logger.info('Launching Chrome', { chromePath, args });
   chromeProcess = spawn(chromePath, args, { stdio: 'ignore', shell: false });
   const proc = chromeProcess;
 

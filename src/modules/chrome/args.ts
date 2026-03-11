@@ -44,5 +44,8 @@ export function buildChromeArgs(
   if (config.chrome.deviceScaleFactor !== undefined) {
     args.unshift(`--force-device-scale-factor=${config.chrome.deviceScaleFactor}`);
   }
+  if (config.chrome.ozonePlatform) {
+    args.unshift(`--ozone-platform=${config.chrome.ozonePlatform}`);
+  }
   return args;
 }

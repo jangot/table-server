@@ -18,12 +18,14 @@ import { createLogger } from '../src/modules/logger';
 function baseConfig(
   chromeOverrides: {
     windowMode?: ChromeWindowMode;
+    kiosk?: boolean;
     userDataDir?: string;
     windowWidth?: number;
     windowHeight?: number;
     windowPositionX?: number;
     windowPositionY?: number;
     deviceScaleFactor?: number;
+    ozonePlatform?: string;
   } = {}
 ): AppConfig {
   return {
@@ -207,6 +209,40 @@ describe('buildChromeArgs', () => {
     assert.ok(args.includes('--noerrdialogs'));
     assert.ok(args.includes('--disable-infobars'));
     assert.ok(args.includes('--force-device-scale-factor=1'));
+  });
+
+  it('kiosk flag true: --kiosk present even without windowMode=kiosk', () => {
+    const config = baseConfig({ kiosk: true });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--kiosk'));
+    assert.ok(args.includes('--noerrdialogs'));
+    assert.ok(args.includes('--disable-infobars'));
+  });
+
+  it('kiosk flag false: no --kiosk when windowMode is default', () => {
+    const config = baseConfig({ kiosk: false, windowMode: 'default' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.includes('--kiosk'));
+  });
+
+  it('ozonePlatform x11: adds --ozone-platform=x11', () => {
+    const config = baseConfig({ ozonePlatform: 'x11' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--ozone-platform=x11'));
+  });
+
+  it('ozonePlatform undefined: no --ozone-platform arg', () => {
+    const config = baseConfig();
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(!args.some((a) => a.startsWith('--ozone-platform=')));
+  });
+
+  it('kiosk + scale + ozone: all flags present', () => {
+    const config = baseConfig({ kiosk: true, deviceScaleFactor: 2, ozonePlatform: 'wayland' });
+    const args = buildChromeArgs(config, 9222, 'http://localhost:3000/');
+    assert.ok(args.includes('--kiosk'));
+    assert.ok(args.includes('--force-device-scale-factor=2'));
+    assert.ok(args.includes('--ozone-platform=wayland'));
   });
 
   it('initialUrl appears only as single arg (no shell injection); user URL never in spawn', () => {
