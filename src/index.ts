@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { getConfig } from './modules/config';
 import { createLogger } from './modules/logger';
 import { checkChromeAndObs } from './modules/startup-checks';
-import { startIdleServer, setHealthChecker } from './modules/idle-server';
+import { startIdleServer, setHealthChecker, setObsScenesService } from './modules/idle-server';
 import { runOrchestrator } from './modules/orchestrator';
 import { createChromeModule, isChromeAlive, navigateToUrl, readLastUrl, restartChrome } from './modules/chrome';
 import { createObsModule, isObsAlive, restartObs } from './modules/obs';
@@ -26,6 +26,8 @@ async function main(): Promise<void> {
   await runOrchestrator([chromeModule, obsModule], logger);
 
   const obsScenesService = createObsScenesService(config.obs, logger, config.scenesConfigPath);
+
+  setObsScenesService(obsScenesService, logger);
 
   if (config.watchdog.checkIntervalMs != null && config.watchdog.checkIntervalMs > 0) {
     startWatchdog(config, logger, {

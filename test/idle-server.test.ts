@@ -1,10 +1,37 @@
 import 'reflect-metadata';
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
-import { startIdleServer, setHealthChecker } from '../src/modules/idle-server';
+import { startIdleServer, setHealthChecker, setObsScenesService } from '../src/modules/idle-server';
+import { SceneNotFoundError } from '../src/modules/obs-scenes/types';
+import type { ObsScenesService } from '../src/modules/obs-scenes/types';
 import type { AppConfig } from '../src/modules/config/types';
 import * as path from 'node:path';
+
+function postJson(port: number, path: string, body?: object): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const payload = body !== undefined ? JSON.stringify(body) : '';
+    const options = {
+      hostname: '127.0.0.1',
+      port,
+      path,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    };
+    const req = http.request(options, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        resolve({ status: res.statusCode!, body: JSON.parse(Buffer.concat(chunks).toString('utf8')) });
+      });
+    });
+    req.on('error', reject);
+    req.end(payload);
+  });
+}
 
 describe('idle-server', () => {
   let server: http.Server;
@@ -98,5 +125,74 @@ describe('idle-server', () => {
     assert.strictEqual(body2.ready, false);
     assert.strictEqual(body2.chrome, true);
     assert.strictEqual(body2.obs, false);
+  });
+
+  describe('OBS scene API', () => {
+    let mockService: ObsScenesService;
+
+    beforeEach(() => {
+      mockService = {
+        getScenes: async () => [],
+        getScenesForDisplay: async () => [],
+        getCurrentScene: async () => null,
+        setScene: async () => {},
+        disconnect: async () => {},
+      };
+      setObsScenesService(mockService);
+    });
+
+    afterEach(() => {
+      setObsScenesService(null);
+    });
+
+    it('POST /obs/scene returns 200 on success', async () => {
+      const result = await postJson(testPort, '/obs/scene', { scene: 'chrome' });
+      assert.strictEqual(result.status, 200);
+      assert.deepStrictEqual(result.body, { ok: true, scene: 'chrome' });
+    });
+
+    it('POST /obs/scene returns 400 when scene field missing', async () => {
+      const result = await postJson(testPort, '/obs/scene', {});
+      assert.strictEqual(result.status, 400);
+    });
+
+    it('POST /obs/scene returns 400 when scene is empty string', async () => {
+      const result = await postJson(testPort, '/obs/scene', { scene: '' });
+      assert.strictEqual(result.status, 400);
+    });
+
+    it('POST /obs/scene returns 404 on SceneNotFoundError', async () => {
+      mockService.setScene = async () => { throw new SceneNotFoundError('chrome'); };
+      const result = await postJson(testPort, '/obs/scene', { scene: 'chrome' });
+      assert.strictEqual(result.status, 404);
+    });
+
+    it('POST /obs/scene returns 503 on OBS connection error', async () => {
+      mockService.setScene = async () => { throw new Error('OBS WebSocket not connected'); };
+      const result = await postJson(testPort, '/obs/scene', { scene: 'chrome' });
+      assert.strictEqual(result.status, 503);
+    });
+
+    it('POST /obs/scene returns 503 when service not set', async () => {
+      setObsScenesService(null);
+      const result = await postJson(testPort, '/obs/scene', { scene: 'chrome' });
+      assert.strictEqual(result.status, 503);
+    });
+
+    it('POST /obs/scene/backup returns 200 and calls setScene("backup")', async () => {
+      let called = '';
+      mockService.setScene = async (name) => { called = name; };
+      const result = await postJson(testPort, '/obs/scene/backup');
+      assert.strictEqual(result.status, 200);
+      assert.strictEqual(called, 'backup');
+    });
+
+    it('POST /obs/scene/default returns 200 and calls setScene("default")', async () => {
+      let called = '';
+      mockService.setScene = async (name) => { called = name; };
+      const result = await postJson(testPort, '/obs/scene/default');
+      assert.strictEqual(result.status, 200);
+      assert.strictEqual(called, 'default');
+    });
   });
 });
