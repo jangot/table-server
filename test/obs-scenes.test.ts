@@ -88,6 +88,15 @@ describe('obs-scenes', () => {
   });
 
   describe('createObsScenesService', () => {
+    let createdService: ReturnType<typeof createObsScenesService> = null;
+
+    after(async () => {
+      if (createdService) {
+        await createdService.disconnect();
+        createdService = null;
+      }
+    });
+
     it('returns null when WebSocket config is not set', () => {
       const config: ObsConfig = { path: '/usr/bin/obs' };
       const result = createObsScenesService(config, logger as unknown as Logger);
@@ -103,6 +112,7 @@ describe('obs-scenes', () => {
       };
       const result = createObsScenesService(config, logger as unknown as Logger);
       assert.ok(result !== null);
+      createdService = result;
       assert.strictEqual(typeof result!.getScenes, 'function');
       assert.strictEqual(typeof result!.getCurrentScene, 'function');
       assert.strictEqual(typeof result!.setScene, 'function');

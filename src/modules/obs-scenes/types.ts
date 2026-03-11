@@ -24,6 +24,7 @@ export interface ObsScenesService {
   getScenesForDisplay(): Promise<SceneForDisplay[]>;
   getCurrentScene(): Promise<string | null>;
   setScene(name: string): Promise<void>;
+  disconnect(): Promise<void>;
 }
 
 /** Thrown when setScene(name) is called with a scene name that does not exist in OBS. */

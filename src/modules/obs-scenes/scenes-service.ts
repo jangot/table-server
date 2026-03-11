@@ -72,5 +72,9 @@ export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsS
         throw err;
       }
     },
+
+    async disconnect(): Promise<void> {
+      await client.disconnect();
+    },
   };
 }

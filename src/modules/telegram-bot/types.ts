@@ -1,4 +1,4 @@
-import type { AppConfig } from '../config/types';
+import type { AppConfig } from '../config';
 import type { Logger } from '../logger';
 import type { AllowedUsersChecker } from '../users';
 
