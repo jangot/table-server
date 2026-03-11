@@ -8,6 +8,19 @@ import type { ObsScenesService } from '../src/modules/obs-scenes/types';
 import type { AppConfig } from '../src/modules/config/types';
 import * as path from 'node:path';
 
+function getHtml(port: number, path: string): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const req = http.get(`http://127.0.0.1:${port}${path}`, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () =>
+        resolve({ status: res.statusCode!, body: Buffer.concat(chunks).toString('utf8') })
+      );
+    });
+    req.on('error', reject);
+  });
+}
+
 function postJson(port: number, path: string, body?: object): Promise<{ status: number; body: unknown }> {
   return new Promise((resolve, reject) => {
     const payload = body !== undefined ? JSON.stringify(body) : '';
@@ -137,6 +150,7 @@ describe('idle-server', () => {
         getCurrentScene: async () => null,
         setScene: async () => {},
         disconnect: async () => {},
+        isConnected: () => true,
       };
       setObsScenesService(mockService);
     });
@@ -193,6 +207,46 @@ describe('idle-server', () => {
       const result = await postJson(testPort, '/obs/scene/default');
       assert.strictEqual(result.status, 200);
       assert.strictEqual(called, 'default');
+    });
+
+    it('GET /obs/scenes returns 200 and shows connected when service connected', async () => {
+      mockService.isConnected = () => true;
+      mockService.getCurrentScene = async () => 'chrome';
+      mockService.getScenesForDisplay = async () => [
+        { name: 'chrome', title: 'Chrome', enabled: true },
+        { name: 'backup', enabled: true },
+      ];
+      const result = await getHtml(testPort, '/obs/scenes');
+      assert.strictEqual(result.status, 200);
+      assert.ok(result.body.includes('connected'));
+      assert.ok(result.body.includes('Chrome'));
+      assert.ok(result.body.includes('chrome')); // currentScene
+    });
+
+    it('GET /obs/scenes returns 200 and shows disconnected when service not connected', async () => {
+      mockService.isConnected = () => false;
+      const result = await getHtml(testPort, '/obs/scenes');
+      assert.strictEqual(result.status, 200);
+      assert.ok(result.body.includes('disconnected'));
+    });
+
+    it('GET /obs/scenes returns 200 with disconnected when obsScenes is null', async () => {
+      setObsScenesService(null);
+      const result = await getHtml(testPort, '/obs/scenes');
+      assert.strictEqual(result.status, 200);
+      assert.ok(result.body.includes('disconnected'));
+    });
+
+    it('GET /obs/scenes does not show disabled scenes as buttons', async () => {
+      mockService.isConnected = () => true;
+      mockService.getCurrentScene = async () => null;
+      mockService.getScenesForDisplay = async () => [
+        { name: 'visible', enabled: true },
+        { name: 'hidden', enabled: false },
+      ];
+      const result = await getHtml(testPort, '/obs/scenes');
+      assert.ok(result.body.includes('visible'));
+      assert.ok(!result.body.includes('>hidden<'));  // disabled scene is not a button
     });
   });
 });

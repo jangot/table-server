@@ -32,6 +32,7 @@ function makeObsScenes(overrides?: Partial<ObsScenesService>): ObsScenesService 
     getCurrentScene: async () => 'scene1',
     setScene: async () => {},
     disconnect: async () => {},
+    isConnected: () => true,
     ...overrides,
   };
 }

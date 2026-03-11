@@ -76,5 +76,9 @@ export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsS
     async disconnect(): Promise<void> {
       await client.disconnect();
     },
+
+    isConnected(): boolean {
+      return client.isConnected();
+    },
   };
 }

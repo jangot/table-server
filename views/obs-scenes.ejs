@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OBS Scenes</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+    .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem; }
+    .badge-ok { background: #d4edda; color: #155724; }
+    .badge-err { background: #f8d7da; color: #721c24; }
+    .scenes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+    button { padding: 0.5rem 1rem; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; background: #fff; }
+    button:hover { background: #f0f0f0; }
+    button.active { background: #007bff; color: #fff; border-color: #007bff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .special-buttons { display: flex; gap: 0.5rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>OBS Scenes</h1>
+
+  <p>
+    Status:
+    <% if (connected) { %>
+      <span class="badge badge-ok">connected</span>
+    <% } else { %>
+      <span class="badge badge-err">disconnected</span>
+    <% } %>
+  </p>
+
+  <% if (currentScene) { %>
+    <p>Current scene: <strong><%= currentScene %></strong></p>
+  <% } %>
+
+  <div class="scenes">
+    <% scenes.filter(s => s.enabled !== false).forEach(scene => { %>
+      <button
+        class="<%= currentScene === scene.name ? 'active' : '' %>"
+        onclick="switchScene('<%= scene.name %>')"
+        <%= !connected ? 'disabled' : '' %>
+      >
+        <%= scene.title || scene.name %>
+      </button>
+    <% }) %>
+  </div>
+
+  <div class="special-buttons">
+    <button onclick="switchScene('backup')" <%= !connected ? 'disabled' : '' %>>Backup</button>
+    <button onclick="switchScene('default')" <%= !connected ? 'disabled' : '' %>>Default</button>
+  </div>
+
+  <script>
+    async function switchScene(name) {
+      const url = name === 'backup' ? '/obs/scene/backup'
+                : name === 'default' ? '/obs/scene/default'
+                : '/obs/scene';
+      const body = (name === 'backup' || name === 'default')
+        ? undefined
+        : JSON.stringify({ scene: name });
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: body ? { 'Content-Type': 'application/json' } : {},
+          body,
+        });
+        if (res.ok) {
+          location.reload();
+        } else {
+          alert('Error: ' + res.status);
+        }
+      } catch (e) {
+        alert('Network error');
+      }
+    }
+  </script>
+</body>
+</html>

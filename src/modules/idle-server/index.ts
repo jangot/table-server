@@ -59,6 +59,22 @@ export function startIdleServer(config: AppConfig): Promise<http.Server> {
     res.status(200).json({ ready: chrome && obs, chrome, obs });
   });
 
+  app.get('/obs/scenes', async (_req, res) => {
+    if (!obsScenes) {
+      return res.render('obs-scenes', {
+        connected: false,
+        currentScene: null,
+        scenes: [],
+      });
+    }
+    const connected = obsScenes.isConnected();
+    const [currentScene, scenes] = await Promise.all([
+      obsScenes.getCurrentScene(),
+      obsScenes.getScenesForDisplay(),
+    ]);
+    res.render('obs-scenes', { connected, currentScene, scenes });
+  });
+
   app.use(express.json());
 
   app.post('/obs/scene', async (req, res) => {
