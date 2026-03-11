@@ -13,6 +13,7 @@ export interface CommandContext {
   reply: (text: string) => Promise<unknown>;
 }
 
+/** Отвечает статусом: готовность системы, Chrome/OBS alive, текущая сцена OBS. */
 export async function handleStatus(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   const from = ctx.from;
   if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
@@ -49,6 +50,7 @@ export async function handleStatus(ctx: CommandContext, deps: TelegramBotDeps): 
   deps.logger.info('Telegram bot: remote command processed', { type: 'status', userId: from.id });
 }
 
+/** Переключает Chrome на idle-страницу (localhost:idle.port). */
 export async function handleIdle(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   const from = ctx.from;
   if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
@@ -73,6 +75,7 @@ export async function handleIdle(ctx: CommandContext, deps: TelegramBotDeps): Pr
   }
 }
 
+/** Перезапускает chrome, obs или оба (аргумент: chrome | obs | all). */
 export async function handleRestart(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   const from = ctx.from;
   if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
@@ -134,6 +137,7 @@ export async function handleRestart(ctx: CommandContext, deps: TelegramBotDeps):
   }
 }
 
+/** Возвращает список сцен OBS для отображения (названия). */
 export async function handleScenes(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   const from = ctx.from;
   if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
@@ -160,6 +164,7 @@ export async function handleScenes(ctx: CommandContext, deps: TelegramBotDeps): 
   }
 }
 
+/** Переключает OBS на сцену по имени из команды /scene <name>. */
 export async function handleScene(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   const from = ctx.from;
   if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
@@ -190,6 +195,7 @@ export async function handleScene(ctx: CommandContext, deps: TelegramBotDeps): P
   }
 }
 
+/** Возвращает имя текущей активной сцены OBS. */
 export async function handleCurrent(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   const from = ctx.from;
   if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
@@ -211,6 +217,7 @@ export async function handleCurrent(ctx: CommandContext, deps: TelegramBotDeps):
   }
 }
 
+/** Внутренняя: переключает OBS на сцену по имени (используется handleBackup/handleDefault). */
 async function switchToNamedScene(
   name: string,
   type: string,
@@ -241,14 +248,17 @@ async function switchToNamedScene(
   }
 }
 
+/** Переключает OBS на сцену "backup". */
 export async function handleBackup(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   await switchToNamedScene('backup', 'backup', ctx, deps);
 }
 
+/** Переключает OBS на сцену "default". */
 export async function handleDefault(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   await switchToNamedScene('default', 'default', ctx, deps);
 }
 
+/** Обрабатывает текст: если сообщение содержит URL — открывает его в Chrome; иначе просит URL или отвечает «Неизвестная команда». */
 export async function handleText(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   if (ctx.message.text.trim().startsWith('/')) {
     await ctx.reply('Неизвестная команда.').catch(() => {});
