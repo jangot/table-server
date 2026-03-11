@@ -80,6 +80,10 @@ export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsW
     socket
       .connect(url, password)
       .then(() => {
+        if (disconnected) {
+          void socket.disconnect().catch(() => {});
+          return;
+        }
         reconnectDelayMs = DEFAULT_RECONNECT_DELAY_MS;
         if (isFirstConnection) {
           logger.info('obs_connection status=connected');

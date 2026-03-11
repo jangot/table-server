@@ -26,6 +26,7 @@ export async function launchObs(
 ): Promise<void> {
   obsProcess = spawn(obsPath, args, { stdio: 'ignore', shell: false });
   const proc = obsProcess;
+  proc.unref();
 
   return new Promise((resolve, reject) => {
     proc.on('error', (err) => {

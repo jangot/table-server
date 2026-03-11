@@ -111,6 +111,14 @@ describe('getRestartDelayMs / shouldThrottleRestart', () => {
   });
 });
 
+describe('restartObs', () => {
+  it('returns without throwing when OBS is not running and module not started', async () => {
+    const config = baseConfig();
+    const logger = createLogger('info');
+    await assert.doesNotReject(() => restartObs(config, logger));
+  });
+});
+
 describe('createObsModule', () => {
   it('returns module with name OBS and start function', () => {
     const config = baseConfig();
@@ -124,13 +132,5 @@ describe('createObsModule', () => {
 describe('isObsAlive', () => {
   it('returns false when OBS process is not running', () => {
     assert.strictEqual(isObsAlive(), false);
-  });
-});
-
-describe('restartObs', () => {
-  it('returns without throwing when OBS is not running and module not started', async () => {
-    const config = baseConfig();
-    const logger = createLogger('info');
-    await assert.doesNotReject(() => restartObs(config, logger));
   });
 });

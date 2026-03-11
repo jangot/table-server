@@ -22,7 +22,8 @@
       "Bash(ls:*)",
       "Bash(xargs:*)",
       "Bash(ls -la /Users/jangot/Projects/private/table-server | grep -E '\\\\.\\(json|ts|js|md|yaml|yml\\)$')",
-      "Bash(node -r ts-node/register --test test/chrome.test.ts test/config.test.ts 2>&1)"
+      "Bash(node -r ts-node/register --test test/chrome.test.ts test/config.test.ts 2>&1)",
+      "Bash(find /home/jangot/apps/table-server -name \"*.spec.ts\" -o -name \"*.test.ts\" 2>/dev/null | head -30)"
     ],
     "deny": [
       "Bash(git push --force:*)",
