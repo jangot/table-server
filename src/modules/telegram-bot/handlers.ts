@@ -1,4 +1,5 @@
 import type { TelegramBotDeps } from './types';
+import { SceneNotFoundError } from '../obs-scenes/types';
 
 /**
  * Security: user input (URL from message, /restart arg) is never passed to
@@ -21,17 +22,31 @@ export async function handleStatus(ctx: CommandContext, deps: TelegramBotDeps): 
   const chrome = deps.isChromeAlive(deps.config);
   const obs = deps.isObsAlive(deps.config);
   const ready = chrome && obs;
-  await ctx
-    .reply(
-      `Готовность: ${ready ? 'ready' : 'degraded'}. Chrome: ${chrome ? 'alive' : 'dead'}. OBS: ${obs ? 'alive' : 'dead'}.`
-    )
-    .catch(() => {});
-  if (from) {
-    deps.logger.info('Telegram bot: remote command processed', {
-      type: 'status',
-      userId: from.id,
-    });
+
+  let currentScene: string | null = null;
+  let obsConnected = false;
+  if (deps.obsScenes) {
+    try {
+      currentScene = await deps.obsScenes.getCurrentScene();
+      obsConnected = true;
+    } catch {
+      obsConnected = false;
+    }
   }
+
+  const obsLine = deps.obsScenes
+    ? `OBS WS: ${obsConnected ? 'connected' : 'disconnected'}.`
+    : '';
+  const sceneLine = currentScene ? `Current scene: ${currentScene}.` : '';
+
+  const parts = [
+    `Готовность: ${ready ? 'ready' : 'degraded'}. Chrome: ${chrome ? 'alive' : 'dead'}. OBS: ${obs ? 'alive' : 'dead'}.`,
+    obsLine,
+    sceneLine,
+  ].filter(Boolean);
+
+  await ctx.reply(parts.join(' ')).catch(() => {});
+  deps.logger.info('Telegram bot: remote command processed', { type: 'status', userId: from.id });
 }
 
 export async function handleIdle(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
@@ -117,6 +132,121 @@ export async function handleRestart(ctx: CommandContext, deps: TelegramBotDeps):
     const msg = err instanceof Error ? err.message : String(err);
     await ctx.reply(`Ошибка: ${msg}`).catch(() => {});
   }
+}
+
+export async function handleScenes(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
+  const from = ctx.from;
+  if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
+    deps.logger.warn('Telegram bot: unauthorized request', { userId: from?.id, username: from?.username });
+    await ctx.reply('Доступ запрещён.').catch(() => {});
+    return;
+  }
+  if (!deps.obsScenes) {
+    await ctx.reply('OBS scenes недоступны.').catch(() => {});
+    return;
+  }
+  try {
+    const scenes = await deps.obsScenes.getScenesForDisplay();
+    if (scenes.length === 0) {
+      await ctx.reply('Сцены не найдены.').catch(() => {});
+      return;
+    }
+    const lines = scenes.map((s) => `• ${s.title ?? s.name}`);
+    await ctx.reply(lines.join('\n')).catch(() => {});
+    deps.logger.info('Telegram bot: remote command processed', { type: 'scenes', userId: from.id });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await ctx.reply(`Ошибка: ${msg}`).catch(() => {});
+  }
+}
+
+export async function handleScene(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
+  const from = ctx.from;
+  if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
+    deps.logger.warn('Telegram bot: unauthorized request', { userId: from?.id, username: from?.username });
+    await ctx.reply('Доступ запрещён.').catch(() => {});
+    return;
+  }
+  if (!deps.obsScenes) {
+    await ctx.reply('OBS scenes недоступны.').catch(() => {});
+    return;
+  }
+  const sceneName = ctx.message.text.replace(/^\s*\/scene\s*/i, '').trim();
+  if (!sceneName) {
+    await ctx.reply('Использование: /scene <name>').catch(() => {});
+    return;
+  }
+  try {
+    await deps.obsScenes.setScene(sceneName);
+    deps.logger.info('Telegram bot: remote command processed', { type: 'scene', scene: sceneName, userId: from.id });
+    await ctx.reply(`Сцена переключена: ${sceneName}`).catch(() => {});
+  } catch (err) {
+    if (err instanceof SceneNotFoundError) {
+      await ctx.reply(`Сцена не найдена: ${err.sceneName}`).catch(() => {});
+    } else {
+      const msg = err instanceof Error ? err.message : String(err);
+      await ctx.reply(`Ошибка: ${msg}`).catch(() => {});
+    }
+  }
+}
+
+export async function handleCurrent(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
+  const from = ctx.from;
+  if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
+    deps.logger.warn('Telegram bot: unauthorized request', { userId: from?.id, username: from?.username });
+    await ctx.reply('Доступ запрещён.').catch(() => {});
+    return;
+  }
+  if (!deps.obsScenes) {
+    await ctx.reply('OBS scenes недоступны.').catch(() => {});
+    return;
+  }
+  try {
+    const current = await deps.obsScenes.getCurrentScene();
+    await ctx.reply(current ? `Текущая сцена: ${current}` : 'Сцена не определена.').catch(() => {});
+    deps.logger.info('Telegram bot: remote command processed', { type: 'current', userId: from.id });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await ctx.reply(`Ошибка: ${msg}`).catch(() => {});
+  }
+}
+
+async function switchToNamedScene(
+  name: string,
+  type: string,
+  ctx: CommandContext,
+  deps: TelegramBotDeps
+): Promise<void> {
+  const from = ctx.from;
+  if (!from || !deps.allowedUsers.isAllowed({ id: from.id, username: from.username })) {
+    deps.logger.warn('Telegram bot: unauthorized request', { userId: from?.id, username: from?.username });
+    await ctx.reply('Доступ запрещён.').catch(() => {});
+    return;
+  }
+  if (!deps.obsScenes) {
+    await ctx.reply('OBS scenes недоступны.').catch(() => {});
+    return;
+  }
+  try {
+    await deps.obsScenes.setScene(name);
+    deps.logger.info('Telegram bot: remote command processed', { type, scene: name, userId: from.id });
+    await ctx.reply(`Сцена переключена: ${name}`).catch(() => {});
+  } catch (err) {
+    if (err instanceof SceneNotFoundError) {
+      await ctx.reply(`Сцена не найдена: ${err.sceneName}`).catch(() => {});
+    } else {
+      const msg = err instanceof Error ? err.message : String(err);
+      await ctx.reply(`Ошибка: ${msg}`).catch(() => {});
+    }
+  }
+}
+
+export async function handleBackup(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
+  await switchToNamedScene('backup', 'backup', ctx, deps);
+}
+
+export async function handleDefault(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
+  await switchToNamedScene('default', 'default', ctx, deps);
 }
 
 export async function handleText(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {

@@ -26,8 +26,6 @@ async function main(): Promise<void> {
   await runOrchestrator([chromeModule, obsModule], logger);
 
   const obsScenesService = createObsScenesService(config.obs, logger, config.scenesConfigPath);
-  // obsScenesService reserved for Telegram bot (014) and Web API (015)
-  void obsScenesService;
 
   if (config.watchdog.checkIntervalMs != null && config.watchdog.checkIntervalMs > 0) {
     startWatchdog(config, logger, {
@@ -60,6 +58,7 @@ async function main(): Promise<void> {
       isObsAlive: (c) => (void c, isObsAlive()),
       restartChrome,
       restartObs,
+      obsScenes: obsScenesService ?? undefined,
     }).catch((err) => {
       logger.error('Telegram bot failed to start', err);
     });

@@ -1,6 +1,7 @@
 import type { AppConfig } from '../config';
 import type { Logger } from '../logger';
 import type { AllowedUsersChecker } from '../users';
+import type { ObsScenesService } from '../obs-scenes';
 
 export interface TelegramBotDeps {
   config: AppConfig;
@@ -11,4 +12,5 @@ export interface TelegramBotDeps {
   isObsAlive: (config: AppConfig) => boolean;
   restartChrome?: (config: AppConfig, logger: Logger) => Promise<void>;
   restartObs?: (config: AppConfig, logger: Logger) => Promise<void>;
+  obsScenes?: ObsScenesService;
 }

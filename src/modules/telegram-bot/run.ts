@@ -1,6 +1,16 @@
 import { Telegraf } from 'telegraf';
 import type { TelegramBotDeps } from './types';
-import { handleStatus, handleIdle, handleRestart, handleText } from './handlers';
+import {
+  handleStatus,
+  handleIdle,
+  handleRestart,
+  handleText,
+  handleScenes,
+  handleScene,
+  handleCurrent,
+  handleBackup,
+  handleDefault,
+} from './handlers';
 
 export function createBot(deps: TelegramBotDeps): Telegraf {
   const { config } = deps;
@@ -9,6 +19,11 @@ export function createBot(deps: TelegramBotDeps): Telegraf {
   bot.command('status', (ctx) => handleStatus(ctx as unknown as import('./handlers').CommandContext, deps));
   bot.command('idle', (ctx) => handleIdle(ctx as unknown as import('./handlers').CommandContext, deps));
   bot.command('restart', (ctx) => handleRestart(ctx as unknown as import('./handlers').CommandContext, deps));
+  bot.command('scenes', (ctx) => handleScenes(ctx as unknown as import('./handlers').CommandContext, deps));
+  bot.command('scene', (ctx) => handleScene(ctx as unknown as import('./handlers').CommandContext, deps));
+  bot.command('current', (ctx) => handleCurrent(ctx as unknown as import('./handlers').CommandContext, deps));
+  bot.command('backup', (ctx) => handleBackup(ctx as unknown as import('./handlers').CommandContext, deps));
+  bot.command('default', (ctx) => handleDefault(ctx as unknown as import('./handlers').CommandContext, deps));
 
   bot.on('text', (ctx) => handleText(ctx as unknown as import('./handlers').CommandContext, deps));
 
