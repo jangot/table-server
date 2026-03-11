@@ -10,6 +10,7 @@ import {
   handleCurrent,
   handleBackup,
   handleDefault,
+  handleHelp,
 } from './handlers';
 
 export function createBot(deps: TelegramBotDeps): Telegraf {
@@ -24,6 +25,7 @@ export function createBot(deps: TelegramBotDeps): Telegraf {
   bot.command('current', (ctx) => handleCurrent(ctx as unknown as import('./handlers').CommandContext, deps));
   bot.command('backup', (ctx) => handleBackup(ctx as unknown as import('./handlers').CommandContext, deps));
   bot.command('default', (ctx) => handleDefault(ctx as unknown as import('./handlers').CommandContext, deps));
+  bot.command('help', (ctx) => handleHelp(ctx as unknown as import('./handlers').CommandContext));
 
   bot.on('text', (ctx) => handleText(ctx as unknown as import('./handlers').CommandContext, deps));
 

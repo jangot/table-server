@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { handleStatus, handleIdle, handleRestart, handleText, handleScenes, handleScene, handleCurrent, handleBackup, handleDefault } from '../src/modules/telegram-bot/handlers';
+import { handleStatus, handleIdle, handleRestart, handleText, handleScenes, handleScene, handleCurrent, handleBackup, handleDefault, handleHelp } from '../src/modules/telegram-bot/handlers';
 import type { CommandContext } from '../src/modules/telegram-bot/handlers';
 import type { ObsScenesService, SceneForDisplay } from '../src/modules/obs-scenes/types';
 import { SceneNotFoundError } from '../src/modules/obs-scenes/types';
@@ -400,6 +400,21 @@ describe('telegram-bot', () => {
     };
     await handleDefault(ctx, deps);
     assert.strictEqual(calledWith, 'default');
+  });
+
+  it('/help: ответ содержит список команд', async () => {
+    const ctx = makeMockCtx('/help', allowedUser);
+    await handleHelp(ctx);
+    assert.ok(ctx.replyText.includes('/status'));
+    assert.ok(ctx.replyText.includes('/restart'));
+    assert.ok(ctx.replyText.includes('/scenes'));
+    assert.ok(ctx.replyText.includes('/help'));
+  });
+
+  it('/help: ответ содержит подсказку про URL', async () => {
+    const ctx = makeMockCtx('/help', allowedUser);
+    await handleHelp(ctx);
+    assert.ok(ctx.replyText.toLowerCase().includes('url') || ctx.replyText.includes('http'));
   });
 
   it('/status with obsScenes: reply contains "OBS WS: connected" and current scene', async () => {

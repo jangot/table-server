@@ -258,6 +258,26 @@ export async function handleDefault(ctx: CommandContext, deps: TelegramBotDeps):
   await switchToNamedScene('default', 'default', ctx, deps);
 }
 
+/** Возвращает список всех доступных команд бота. */
+export async function handleHelp(ctx: CommandContext): Promise<void> {
+  const text = [
+    'Доступные команды:',
+    '',
+    '/status — статус системы (Chrome, OBS, текущая сцена)',
+    '/idle — переключить Chrome на idle-страницу',
+    '/restart chrome|obs|all — перезапустить Chrome, OBS или оба',
+    '/scenes — список сцен OBS',
+    '/scene <name> — переключить OBS на сцену',
+    '/current — текущая активная сцена OBS',
+    '/backup — переключить OBS на сцену "backup"',
+    '/default — переключить OBS на сцену "default"',
+    '/help — показать это сообщение',
+    '',
+    'Также можно отправить URL (http/https) — страница откроется в Chrome.',
+  ].join('\n');
+  await ctx.reply(text).catch(() => {});
+}
+
 /** Обрабатывает текст: если сообщение содержит URL — открывает его в Chrome; иначе просит URL или отвечает «Неизвестная команда». */
 export async function handleText(ctx: CommandContext, deps: TelegramBotDeps): Promise<void> {
   if (ctx.message.text.trim().startsWith('/')) {
