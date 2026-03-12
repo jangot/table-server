@@ -134,7 +134,7 @@ export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsW
     async getCurrentProgramScene(): Promise<{ sceneName: string }> {
       if (!obs) throw new Error('OBS WebSocket not connected');
       const res = await obs.call('GetCurrentProgramScene');
-      return { sceneName: (res as { sceneName?: string }).sceneName ?? '' };
+      return { sceneName: (res as { currentProgramSceneName?: string }).currentProgramSceneName ?? '' };
     },
 
     async setCurrentProgramScene(sceneName: string): Promise<void> {
