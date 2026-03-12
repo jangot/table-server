@@ -159,6 +159,7 @@ export async function handleScenes(ctx: CommandContext, deps: TelegramBotDeps): 
     await ctx.reply(lines.join('\n')).catch(() => {});
     deps.logger.info('Telegram bot: remote command processed', { type: 'scenes', userId: from.id });
   } catch (err) {
+    deps.logger.error('Telegram bot: get scenes failed', String(err));
     const msg = err instanceof Error ? err.message : String(err);
     await ctx.reply(`Ошибка: ${msg}`).catch(() => {});
   }

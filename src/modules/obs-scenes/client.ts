@@ -122,6 +122,7 @@ export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsW
     async getSceneList(): Promise<{ scenes: Array<{ sceneName: string }> }> {
       if (!obs) throw new Error('OBS WebSocket not connected');
       const res = await obs.call('GetSceneList');
+      logger.info(`obs_scenes action=get_scene_list response=${JSON.stringify(res)}`);
       const scenes = (res as { scenes?: unknown[] }).scenes ?? [];
       return {
         scenes: scenes.map((s: unknown) => ({
