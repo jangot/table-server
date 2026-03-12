@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsIn, Min, Max, IsArray, ValidateNested, IsBoolean } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsIn, Min, Max, IsArray, ValidateNested, IsBoolean, IsNotEmpty, ArrayMinSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export type ChromeWindowMode = 'kiosk' | 'app' | 'fullscreen' | 'default';
@@ -79,19 +79,17 @@ export class ObsConfig {
   @IsString()
   profilePath?: string;
 
-  @IsOptional()
   @IsString()
-  host?: string;
+  @IsNotEmpty()
+  host!: string;
 
-  @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(65535)
-  port?: number;
+  port!: number;
 
-  @IsOptional()
   @IsString()
-  password?: string;
+  password!: string;
 
   @IsOptional()
   @IsNumber()
@@ -99,25 +97,15 @@ export class ObsConfig {
   projectorMonitorIndex?: number;
 }
 
-/** Returns true if OBS WebSocket (scenes) is enabled: host, port and password are set (password may be empty string). */
-export function isObsScenesEnabled(obs: ObsConfig): boolean {
-  return (
-    obs.host != null &&
-    obs.host !== '' &&
-    obs.port != null &&
-    obs.password !== undefined
-  );
-}
-
 export class TelegramConfig {
-  @IsOptional()
   @IsString()
-  botToken?: string;
+  @IsNotEmpty()
+  botToken!: string;
 
-  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  allowedUsers?: string[];
+  @ArrayMinSize(1)
+  allowedUsers!: string[];
 }
 
 export class IdleConfig {

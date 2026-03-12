@@ -5,7 +5,6 @@
  */
 
 import type { ObsConfig } from '../config/types';
-import { isObsScenesEnabled } from '../config';
 import type { Logger } from '../logger';
 import { createObsWebSocketClient } from './client';
 import type { ObsWebSocketClient } from './client';
@@ -15,23 +14,17 @@ import type { ObsScenesService } from './types';
 
 export type { ObsScenesService, SceneConfigEntry, SceneForDisplay } from './types';
 export { SceneNotFoundError } from './types';
-export { isObsScenesEnabled } from '../config';
 
 /**
- * Create OBS Scenes service if WebSocket config is enabled (host, port, password set).
+ * Create OBS Scenes service.
  * Starts connection in background; does not wait for OBS to be available.
- * Returns null if config is not set.
  * Optional scenesConfigPath loads JSON config for UI enrichment (title, type, enabled).
  */
 export function createObsScenesService(
   config: ObsConfig,
   logger: Logger,
   scenesConfigPath?: string
-): ObsScenesService | null {
-  if (!isObsScenesEnabled(config) || config.host == null || config.port == null || config.password === undefined) {
-    return null;
-  }
-
+): ObsScenesService {
   const { projectorMonitorIndex } = config;
 
   // eslint-disable-next-line prefer-const

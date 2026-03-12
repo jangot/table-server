@@ -4,7 +4,6 @@ import assert from 'node:assert';
 import type { Logger } from '../src/modules/logger';
 import {
   createObsScenesService,
-  isObsScenesEnabled,
   SceneNotFoundError,
 } from '../src/modules/obs-scenes';
 import { createObsScenesServiceImpl } from '../src/modules/obs-scenes/scenes-service';
@@ -63,47 +62,14 @@ describe('obs-scenes', () => {
     logger.lines.length = 0;
   });
 
-  describe('isObsScenesEnabled', () => {
-    it('returns true when host, port and password are set', () => {
-      const obs: ObsConfig = { path: '/usr/bin/obs', host: 'localhost', port: 4455, password: '' };
-      assert.strictEqual(isObsScenesEnabled(obs), true);
-    });
-
-    it('returns false when host is missing', () => {
-      const obs: ObsConfig = { path: '/usr/bin/obs', port: 4455, password: 'p' };
-      assert.strictEqual(isObsScenesEnabled(obs), false);
-    });
-
-    it('returns false when port is missing', () => {
-      const obs: ObsConfig = { path: '/usr/bin/obs', host: 'localhost', password: 'p' };
-      assert.strictEqual(isObsScenesEnabled(obs), false);
-    });
-
-    it('returns false when password is undefined', () => {
-      const obs: ObsConfig = { path: '/usr/bin/obs', host: 'localhost', port: 4455 };
-      assert.strictEqual(isObsScenesEnabled(obs), false);
-    });
-
-    it('returns true when password is empty string', () => {
-      const obs: ObsConfig = { path: '/usr/bin/obs', host: 'localhost', port: 4455, password: '' };
-      assert.strictEqual(isObsScenesEnabled(obs), true);
-    });
-  });
-
   describe('createObsScenesService', () => {
-    let createdService: ReturnType<typeof createObsScenesService> = null;
+    let createdService: ReturnType<typeof createObsScenesService> | undefined;
 
     after(async () => {
       if (createdService) {
         await createdService.disconnect();
-        createdService = null;
+        createdService = undefined;
       }
-    });
-
-    it('returns null when WebSocket config is not set', () => {
-      const config: ObsConfig = { path: '/usr/bin/obs' };
-      const result = createObsScenesService(config, logger as unknown as Logger);
-      assert.strictEqual(result, null);
     });
 
     it('returns service with getScenes, getCurrentScene, setScene, getScenesForDisplay when config is set', () => {
@@ -114,12 +80,11 @@ describe('obs-scenes', () => {
         password: 'secret',
       };
       const result = createObsScenesService(config, logger as unknown as Logger);
-      assert.ok(result !== null);
       createdService = result;
-      assert.strictEqual(typeof result!.getScenes, 'function');
-      assert.strictEqual(typeof result!.getCurrentScene, 'function');
-      assert.strictEqual(typeof result!.setScene, 'function');
-      assert.strictEqual(typeof result!.getScenesForDisplay, 'function');
+      assert.strictEqual(typeof result.getScenes, 'function');
+      assert.strictEqual(typeof result.getCurrentScene, 'function');
+      assert.strictEqual(typeof result.setScene, 'function');
+      assert.strictEqual(typeof result.getScenesForDisplay, 'function');
     });
   });
 

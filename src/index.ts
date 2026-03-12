@@ -49,22 +49,20 @@ async function main(): Promise<void> {
     await navigateToUrl(lastUrl, { config, logger });
   }
 
-  if (config.telegram.botToken) {
-    const allowedUsers = createAllowedUsersChecker(config);
-    startBot({
-      config,
-      logger,
-      allowedUsers,
-      navigateToUrl,
-      isChromeAlive,
-      isObsAlive: (c) => (void c, isObsAlive()),
-      restartChrome,
-      restartObs,
-      obsScenes: obsScenesService ?? undefined,
-    }).catch((err) => {
-      logger.error('Telegram bot failed to start', err);
-    });
-  }
+  const allowedUsers = createAllowedUsersChecker(config);
+  startBot({
+    config,
+    logger,
+    allowedUsers,
+    navigateToUrl,
+    isChromeAlive,
+    isObsAlive: (c) => (void c, isObsAlive()),
+    restartChrome,
+    restartObs,
+    obsScenes: obsScenesService ?? undefined,
+  }).catch((err) => {
+    logger.error('Telegram bot failed to start', err);
+  });
 }
 
 main().catch((err) => {

@@ -48,9 +48,9 @@ function collectMessages(errors: ValidationError[], prefix = ''): string[] {
 export function validateEnv(): AppConfig {
   const allowedRaw = getEnv('ALLOWED_TELEGRAM_USERS');
   const allowedTelegramUsers =
-    allowedRaw === undefined || allowedRaw.trim() === ''
-      ? undefined
-      : allowedRaw.split(',').map((s) => s.trim()).filter(Boolean);
+    allowedRaw != null
+      ? allowedRaw.split(',').map((s) => s.trim()).filter(Boolean)
+      : undefined;
 
   const plain = {
     logLevel: getEnv('LOG_LEVEL')?.toLowerCase().trim(),
@@ -81,13 +81,13 @@ export function validateEnv(): AppConfig {
       path: getEnv('OBS_PATH')?.trim(),
       readyTimeout: parseOptionalInt(getEnv('OBS_READY_TIMEOUT')),
       profilePath: getEnv('OBS_PROFILE_PATH')?.trim() || undefined,
-      host: getEnv('OBS_HOST')?.trim() || undefined,
+      host: getEnv('OBS_HOST')?.trim(),
       port: parseOptionalInt(getEnv('OBS_PORT')),
       password: getEnv('OBS_PASSWORD'),
       projectorMonitorIndex: parseOptionalInt(getEnv('OBS_PROJECTOR_MONITOR')),
     }),
     telegram: plainToInstance(TelegramConfig, {
-      botToken: getEnv('TELEGRAM_BOT_TOKEN')?.trim() || undefined,
+      botToken: getEnv('TELEGRAM_BOT_TOKEN')?.trim(),
       allowedUsers: allowedTelegramUsers,
     }),
     idle: plainToInstance(IdleConfig, {

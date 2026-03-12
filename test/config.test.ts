@@ -10,9 +10,14 @@ import {
 const REQUIRED = {
   CHROME_PATH: '/usr/bin/chrome',
   OBS_PATH: '/usr/bin/obs',
+  OBS_HOST: 'localhost',
+  OBS_PORT: '4455',
+  OBS_PASSWORD: '',
   IDLE_PORT: '3000',
   IDLE_VIEWS_PATH: './views',
   LOG_LEVEL: 'info',
+  TELEGRAM_BOT_TOKEN: 'test-token',
+  ALLOWED_TELEGRAM_USERS: 'test-user',
 };
 
 function setEnv(env: Record<string, string>): void {
@@ -147,22 +152,29 @@ describe('config', () => {
     unsetEnv(['TELEGRAM_BOT_TOKEN', 'ALLOWED_TELEGRAM_USERS']);
   });
 
-  it('telegramBotToken is absent when TELEGRAM_BOT_TOKEN not set', () => {
+  it('validateEnv throws when TELEGRAM_BOT_TOKEN not set', () => {
     resetConfigForTesting();
     setEnv(REQUIRED);
     delete process.env.TELEGRAM_BOT_TOKEN;
-    const cfg = validateEnv();
-    assert.strictEqual(cfg.telegram.botToken, undefined);
+    assert.throws(() => validateEnv(), /telegram\.botToken/);
+    setEnv(REQUIRED);
+  });
+
+  it('validateEnv throws when ALLOWED_TELEGRAM_USERS is empty string', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.ALLOWED_TELEGRAM_USERS = '';
+    assert.throws(() => validateEnv(), /allowedUsers/);
+    setEnv(REQUIRED);
   });
 
   it('ALLOWED_TELEGRAM_USERS with spaces and commas parses to array without empty elements', () => {
     resetConfigForTesting();
     setEnv(REQUIRED);
-    process.env.TELEGRAM_BOT_TOKEN = 'x';
     process.env.ALLOWED_TELEGRAM_USERS = ' a , , b ,  ';
     const cfg = validateEnv();
     assert.deepStrictEqual(cfg.telegram.allowedUsers, ['a', 'b']);
-    unsetEnv(['TELEGRAM_BOT_TOKEN', 'ALLOWED_TELEGRAM_USERS']);
+    unsetEnv(['ALLOWED_TELEGRAM_USERS']);
   });
 
   it('CHROME_WINDOW_* env: all four set, config has numeric values', () => {
@@ -255,13 +267,14 @@ describe('config', () => {
     unsetEnv(['OBS_HOST', 'OBS_PORT', 'OBS_PASSWORD']);
   });
 
-  it('obs.host, obs.port, obs.password are undefined when env not set', () => {
+  it('validateEnv throws when OBS WebSocket env not set', () => {
     resetConfigForTesting();
     setEnv(REQUIRED);
-    const cfg = validateEnv();
-    assert.strictEqual(cfg.obs.host, undefined);
-    assert.strictEqual(cfg.obs.port, undefined);
-    assert.strictEqual(cfg.obs.password, undefined);
+    delete process.env.OBS_HOST;
+    delete process.env.OBS_PORT;
+    delete process.env.OBS_PASSWORD;
+    assert.throws(() => validateEnv(), /obs\.(host|port|password)/);
+    setEnv(REQUIRED);
   });
 
   it('OBS_PORT boundary: 1 and 65535 are valid', () => {
