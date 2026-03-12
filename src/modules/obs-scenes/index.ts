@@ -41,7 +41,9 @@ export function createObsScenesService(
             return;
           }
 
-          const monitor = monitors.find((m) => m.monitorName === projectorMonitorName);
+          const monitor = monitors.find(
+            (m) => m.monitorName === projectorMonitorName || m.monitorName.startsWith(`${projectorMonitorName}(`)
+          );
           if (!monitor) {
             logger.warn(`obs_projector action=open status=skip reason=monitor_not_found name=${projectorMonitorName}`);
             return;
