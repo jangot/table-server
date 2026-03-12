@@ -18,7 +18,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Service for controlling OBS and Chrome for projector streaming; Telegram bot and idle HTTP server.",
   "dependencies": {
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
