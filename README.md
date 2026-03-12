@@ -31,7 +31,7 @@ Configuration is **only via environment variables** (and optionally a `.env` fil
 
 **Optional (examples):** `TELEGRAM_BOT_TOKEN`, `ALLOWED_TELEGRAM_USERS` (for the Telegram bot); `WATCHDOG_CHECK_INTERVAL_MS` (enables watchdog); `OBS_HOST`, `OBS_PORT`, `OBS_PASSWORD` (for OBS WebSocket scene control).
 
-For the full table and descriptions, see [Environment variables](docs/env.md).
+For a step-by-step setup guide, see [Setup](docs/setup.md). For the full table and descriptions, see [Environment variables](docs/env.md).
 
 ## Scripts
 
