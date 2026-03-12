@@ -38,6 +38,7 @@ status_color() {
     analyzed) echo -e "${YELLOW}analyzed${RESET}" ;;
     planned)  echo -e "${GREEN}planned${RESET}" ;;
     done)     echo -e "${GRAY}done${RESET}" ;;
+    skipped)  echo -e "${YELLOW}skipped${RESET}" ;;
   esac
 }
 
@@ -61,10 +62,11 @@ cmd_list() {
     echo ""
     echo -e "${BOLD}Done tasks:${RESET}"
     for dir in "$DONE_DIR"/*/; do
-      local name title
+      local name status title
       name=$(basename "$dir")
+      status=$([ -f "$dir/skipped.md" ] && echo "skipped" || echo "done")
       title=$(get_title "$dir")
-      printf "  [%-8s]  %-40s  %s\n" "$(status_color "done")" "$name" "$title"
+      printf "  [%-8s]  %-40s  %s\n" "$(status_color "$status")" "$name" "$title"
     done
   fi
 }
@@ -112,7 +114,7 @@ cmd_show() {
   fi
 
   local status title
-  status=$([ -d "$DONE_DIR/$name" ] && echo "done" || get_status "$dir")
+  status=$([ -d "$DONE_DIR/$name" ] && ([ -f "$dir/skipped.md" ] && echo "skipped" || echo "done") || get_status "$dir")
   title=$(get_title "$dir")
 
   echo -e "${BOLD}$name${RESET}"

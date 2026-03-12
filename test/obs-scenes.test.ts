@@ -47,6 +47,9 @@ function createMockClient(overrides?: Partial<ObsWebSocketClient>): ObsWebSocket
     async openSourceProjector(sourceName: string, monitorIndex: number) {
       void sourceName; void monitorIndex;
     },
+    async getMonitorList() {
+      return { monitors: [] };
+    },
     ...overrides,
   };
 }
@@ -199,44 +202,74 @@ describe('obs-scenes', () => {
     });
   });
 
-  describe('openSourceProjector logic', () => {
-    it('onConnected вызывает openSourceProjector для первой output.* сцены', async () => {
+  describe('openSourceProjector logic (по имени монитора)', () => {
+    it('открывает проектор при совпадении имени монитора', async () => {
       const calls: Array<{ sourceName: string; monitorIndex: number }> = [];
       const client = createMockClient({
-        async getSceneList() {
+        async getMonitorList() {
           return {
-            scenes: [
-              { sceneName: 'src.cam' },
-              { sceneName: 'output.main' },
-              { sceneName: 'output.backup' },
+            monitors: [
+              { monitorIndex: 0, monitorName: 'eDP-1', monitorWidth: 1920, monitorHeight: 1080, monitorPositionX: 0, monitorPositionY: 0 },
+              { monitorIndex: 1, monitorName: 'HDMI-1', monitorWidth: 1920, monitorHeight: 1080, monitorPositionX: 1920, monitorPositionY: 0 },
             ],
           };
+        },
+        async getSceneList() {
+          return { scenes: [{ sceneName: 'src.cam' }, { sceneName: 'output.main' }] };
         },
         async openSourceProjector(sourceName, monitorIndex) {
           calls.push({ sourceName, monitorIndex });
         },
       });
 
-      const monitorIndex = 1;
+      const { monitors } = await client.getMonitorList();
+      const monitor = monitors.find((m) => m.monitorName === 'HDMI-1');
+      assert.ok(monitor);
       const { scenes } = await client.getSceneList();
       const outputScene = scenes.find((s) => s.sceneName.startsWith('output.'));
       assert.ok(outputScene);
-      await client.openSourceProjector(outputScene.sceneName, monitorIndex);
+      await client.openSourceProjector(outputScene.sceneName, monitor.monitorIndex);
 
       assert.strictEqual(calls.length, 1);
       assert.deepStrictEqual(calls[0], { sourceName: 'output.main', monitorIndex: 1 });
     });
 
-    it('onConnected пропускает проектор если нет output.* сцен', async () => {
+    it('пропускает проектор если монитор с именем не найден', async () => {
       const calls: unknown[] = [];
       const client = createMockClient({
+        async getMonitorList() {
+          return {
+            monitors: [
+              { monitorIndex: 0, monitorName: 'eDP-1', monitorWidth: 1920, monitorHeight: 1080, monitorPositionX: 0, monitorPositionY: 0 },
+            ],
+          };
+        },
+        async openSourceProjector(...args) { calls.push(args); },
+      });
+
+      const { monitors } = await client.getMonitorList();
+      const monitor = monitors.find((m) => m.monitorName === 'HDMI-1');
+      assert.strictEqual(monitor, undefined);
+      assert.strictEqual(calls.length, 0);
+    });
+
+    it('пропускает проектор если нет output.* сцен (монитор найден)', async () => {
+      const calls: unknown[] = [];
+      const client = createMockClient({
+        async getMonitorList() {
+          return {
+            monitors: [
+              { monitorIndex: 1, monitorName: 'HDMI-1', monitorWidth: 1920, monitorHeight: 1080, monitorPositionX: 0, monitorPositionY: 0 },
+            ],
+          };
+        },
         async getSceneList() {
           return { scenes: [{ sceneName: 'src.cam' }, { sceneName: 'src.screen' }] };
         },
         async openSourceProjector(...args) { calls.push(args); },
       });
 
-      const scenes = (await client.getSceneList()).scenes;
+      const { scenes } = await client.getSceneList();
       const outputScene = scenes.find((s) => s.sceneName.startsWith('output.'));
       assert.strictEqual(outputScene, undefined);
       assert.strictEqual(calls.length, 0);

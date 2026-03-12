@@ -27,6 +27,15 @@ export interface ObsWebSocketClientConfig {
   onConnected?: () => Promise<void>;
 }
 
+export interface ObsMonitor {
+  monitorIndex: number;
+  monitorName: string;
+  monitorWidth: number;
+  monitorHeight: number;
+  monitorPositionX: number;
+  monitorPositionY: number;
+}
+
 export interface ObsWebSocketClient {
   connect(): void;
   disconnect(): Promise<void>;
@@ -35,6 +44,7 @@ export interface ObsWebSocketClient {
   getCurrentProgramScene(): Promise<{ sceneName: string }>;
   setCurrentProgramScene(sceneName: string): Promise<void>;
   openSourceProjector(sourceName: string, monitorIndex: number): Promise<void>;
+  getMonitorList(): Promise<{ monitors: ObsMonitor[] }>;
 }
 
 export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsWebSocketClient {
@@ -156,6 +166,23 @@ export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsW
         projectorType: 'Source',
         monitorIndex,
       });
+    },
+
+    async getMonitorList(): Promise<{ monitors: ObsMonitor[] }> {
+      if (!obs) throw new Error('OBS WebSocket not connected');
+      const res = await obs.call('GetMonitorList');
+      const monitors = ((res as { monitors?: unknown[] }).monitors ?? []).map((m: unknown) => {
+        const mon = m as Record<string, unknown>;
+        return {
+          monitorIndex: (mon.monitorIndex as number) ?? 0,
+          monitorName: (mon.monitorName as string) ?? '',
+          monitorWidth: (mon.monitorWidth as number) ?? 0,
+          monitorHeight: (mon.monitorHeight as number) ?? 0,
+          monitorPositionX: (mon.monitorPositionX as number) ?? 0,
+          monitorPositionY: (mon.monitorPositionY as number) ?? 0,
+        };
+      });
+      return { monitors };
     },
   };
 }

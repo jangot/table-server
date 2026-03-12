@@ -26,7 +26,8 @@
       "Bash(find /home/jangot/apps/table-server -name \"*.spec.ts\" -o -name \"*.test.ts\" 2>/dev/null | head -30)",
       "Bash(xrandr 2>/dev/null | grep ' connected' || echo \"xrandr not available\")",
       "Bash(chmod +x /Users/jangot/Projects/private/table-server/scripts/tasks.sh)",
-      "Bash(bash scripts/tasks.sh list --done 2>&1 | head -20)"
+      "Bash(bash scripts/tasks.sh list --done 2>&1 | head -20)",
+      "Bash(find /home/jangot/apps/table-server -maxdepth 3 -type f \\\\\\( -name \"README*\" -o -name \"*.md\" -o -name \".env*\" \\\\\\) 2>/dev/null | head -20)"
     ],
     "deny": [
       "Bash(git push --force:*)",

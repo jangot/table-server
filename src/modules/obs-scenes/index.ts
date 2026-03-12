@@ -25,14 +25,28 @@ export function createObsScenesService(
   logger: Logger,
   scenesConfigPath?: string
 ): ObsScenesService {
-  const { projectorMonitorIndex } = config;
+  const { projectorMonitorName } = config;
 
   // eslint-disable-next-line prefer-const
   let client: ObsWebSocketClient;
 
   const onConnected =
-    projectorMonitorIndex != null
+    projectorMonitorName != null
       ? async () => {
+          let monitors: Array<{ monitorIndex: number; monitorName: string }>;
+          try {
+            ({ monitors } = await client.getMonitorList());
+          } catch (err) {
+            logger.warn(`obs_projector action=get_monitors error=${err instanceof Error ? err.message : String(err)}`);
+            return;
+          }
+
+          const monitor = monitors.find((m) => m.monitorName === projectorMonitorName);
+          if (!monitor) {
+            logger.warn(`obs_projector action=open status=skip reason=monitor_not_found name=${projectorMonitorName}`);
+            return;
+          }
+
           let scenes: Array<{ sceneName: string }>;
           try {
             ({ scenes } = await client.getSceneList());
@@ -49,8 +63,11 @@ export function createObsScenesService(
             logger.warn('obs_projector action=open status=skip reason=no_output_scene');
             return;
           }
-          await client.openSourceProjector(outputScene.sceneName, projectorMonitorIndex);
-          logger.info(`obs_projector action=open scene=${outputScene.sceneName} monitor=${projectorMonitorIndex}`);
+
+          await client.openSourceProjector(outputScene.sceneName, monitor.monitorIndex);
+          logger.info(
+            `obs_projector action=open scene=${outputScene.sceneName} monitor_name=${projectorMonitorName} monitor_index=${monitor.monitorIndex}`
+          );
         }
       : undefined;
 

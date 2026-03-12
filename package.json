@@ -15,7 +15,8 @@
     "tasks": "bash scripts/tasks.sh list",
     "tasks:done": "bash scripts/tasks.sh list --done",
     "tasks:next": "bash scripts/tasks.sh next",
-    "tasks:show": "bash scripts/tasks.sh show"
+    "tasks:show": "bash scripts/tasks.sh show",
+    "show:monitors": "bash scripts/show-monitors.sh"
   },
   "keywords": [],
   "author": "",

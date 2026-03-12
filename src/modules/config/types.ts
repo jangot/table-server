@@ -92,9 +92,8 @@ export class ObsConfig {
   password!: string;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  projectorMonitorIndex?: number;
+  @IsString()
+  projectorMonitorName?: string;
 }
 
 export class TelegramConfig {

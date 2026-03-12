@@ -84,7 +84,7 @@ export function validateEnv(): AppConfig {
       host: getEnv('OBS_HOST')?.trim(),
       port: parseOptionalInt(getEnv('OBS_PORT')),
       password: getEnv('OBS_PASSWORD'),
-      projectorMonitorIndex: parseOptionalInt(getEnv('OBS_PROJECTOR_MONITOR')),
+      projectorMonitorName: getEnv('OBS_PROJECTOR_MONITOR_NAME')?.trim() || undefined,
     }),
     telegram: plainToInstance(TelegramConfig, {
       botToken: getEnv('TELEGRAM_BOT_TOKEN')?.trim(),
