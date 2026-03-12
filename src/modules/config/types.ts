@@ -92,6 +92,11 @@ export class ObsConfig {
   @IsOptional()
   @IsString()
   password?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  projectorMonitorIndex?: number;
 }
 
 /** Returns true if OBS WebSocket (scenes) is enabled: host, port and password are set (password may be empty string). */

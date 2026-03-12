@@ -45,6 +45,9 @@ function createMockClient(overrides?: Partial<ObsWebSocketClient>): ObsWebSocket
     async setCurrentProgramScene(name: string) {
       void name;
     },
+    async openSourceProjector(sourceName: string, monitorIndex: number) {
+      void sourceName; void monitorIndex;
+    },
     ...overrides,
   };
 }
@@ -228,6 +231,50 @@ describe('obs-scenes', () => {
       assert.deepStrictEqual(display, []);
       const warnLine = logger.lines.find((l) => l.includes('action=get_scenes_for_display'));
       assert.ok(warnLine);
+    });
+  });
+
+  describe('openSourceProjector logic', () => {
+    it('onConnected вызывает openSourceProjector для первой output.* сцены', async () => {
+      const calls: Array<{ sourceName: string; monitorIndex: number }> = [];
+      const client = createMockClient({
+        async getSceneList() {
+          return {
+            scenes: [
+              { sceneName: 'src.cam' },
+              { sceneName: 'output.main' },
+              { sceneName: 'output.backup' },
+            ],
+          };
+        },
+        async openSourceProjector(sourceName, monitorIndex) {
+          calls.push({ sourceName, monitorIndex });
+        },
+      });
+
+      const monitorIndex = 1;
+      const { scenes } = await client.getSceneList();
+      const outputScene = scenes.find((s) => s.sceneName.startsWith('output.'));
+      assert.ok(outputScene);
+      await client.openSourceProjector(outputScene.sceneName, monitorIndex);
+
+      assert.strictEqual(calls.length, 1);
+      assert.deepStrictEqual(calls[0], { sourceName: 'output.main', monitorIndex: 1 });
+    });
+
+    it('onConnected пропускает проектор если нет output.* сцен', async () => {
+      const calls: unknown[] = [];
+      const client = createMockClient({
+        async getSceneList() {
+          return { scenes: [{ sceneName: 'src.cam' }, { sceneName: 'src.screen' }] };
+        },
+        async openSourceProjector(...args) { calls.push(args); },
+      });
+
+      const scenes = (await client.getSceneList()).scenes;
+      const outputScene = scenes.find((s) => s.sceneName.startsWith('output.'));
+      assert.strictEqual(outputScene, undefined);
+      assert.strictEqual(calls.length, 0);
     });
   });
 });

@@ -24,6 +24,7 @@ export interface ObsWebSocketClientConfig {
   port: number;
   password: string;
   logger: Logger;
+  onConnected?: () => Promise<void>;
 }
 
 export interface ObsWebSocketClient {
@@ -33,10 +34,11 @@ export interface ObsWebSocketClient {
   getSceneList(): Promise<{ scenes: Array<{ sceneName: string }> }>;
   getCurrentProgramScene(): Promise<{ sceneName: string }>;
   setCurrentProgramScene(sceneName: string): Promise<void>;
+  openSourceProjector(sourceName: string, monitorIndex: number): Promise<void>;
 }
 
 export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsWebSocketClient {
-  const { host, port, password, logger } = config;
+  const { host, port, password, logger, onConnected } = config;
   const url = `ws://${host}:${port}`;
   let obs: ObsSocketInstance | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -91,6 +93,11 @@ export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsW
         } else {
           logger.info('obs_connection status=reconnected');
         }
+        if (onConnected) {
+          void onConnected().catch((err: Error) => {
+            logger.warn(`obs_connection on_connected_error=${err?.message ?? 'unknown'}`);
+          });
+        }
       })
       .catch((err: Error) => {
         obs = null;
@@ -140,6 +147,15 @@ export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsW
     async setCurrentProgramScene(sceneName: string): Promise<void> {
       if (!obs) throw new Error('OBS WebSocket not connected');
       await obs.call('SetCurrentProgramScene', { sceneName });
+    },
+
+    async openSourceProjector(sourceName: string, monitorIndex: number): Promise<void> {
+      if (!obs) throw new Error('OBS WebSocket not connected');
+      await obs.call('OpenSourceProjector', {
+        sourceName,
+        projectorType: 'Source',
+        monitorIndex,
+      });
     },
   };
 }
