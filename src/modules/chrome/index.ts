@@ -3,6 +3,7 @@ import type { Logger } from '../logger';
 import type { AppModule } from '../orchestrator';
 import { buildChromeArgs } from './args';
 import { navigateToUrl as cdpNavigateToUrl } from './cdp';
+import { loadScriptMap } from './scriptRegistry';
 import { getChromeProcess, killChromeProcess } from './launch';
 import { launchChrome } from './launch';
 import { readLastUrl } from './lastUrlState';
@@ -57,5 +58,15 @@ export async function navigateToUrl(
     windowWidth !== undefined && windowHeight !== undefined
       ? { width: windowWidth, height: windowHeight, deviceScaleFactor: deviceScaleFactor ?? 1 }
       : undefined;
-  await cdpNavigateToUrl(port, url, statePath, deps.logger, { viewport });
+  // Загружаем мап при каждой навигации (чтобы изменения применялись без рестарта)
+  const { chromeScriptsDir, chromeScriptsMap } = deps.config;
+  let scriptRegistry: { scriptsDir: string; scriptMap: Record<string, string> } | undefined;
+  if (chromeScriptsDir && chromeScriptsMap) {
+    const scriptMap = loadScriptMap(chromeScriptsMap, deps.logger);
+    if (scriptMap) {
+      scriptRegistry = { scriptsDir: chromeScriptsDir, scriptMap };
+    }
+  }
+
+  await cdpNavigateToUrl(port, url, statePath, deps.logger, { viewport, scriptRegistry });
 }

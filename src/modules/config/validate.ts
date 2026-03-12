@@ -56,6 +56,8 @@ export function validateEnv(): AppConfig {
     logLevel: getEnv('LOG_LEVEL')?.toLowerCase().trim(),
     lastUrlStatePath: getEnv('LAST_URL_STATE_PATH')?.trim() || undefined,
     scenesConfigPath: getEnv('SCENES_CONFIG_PATH')?.trim() || undefined,
+    chromeScriptsDir: getEnv('CHROME_SCRIPTS_DIR')?.trim() || undefined,
+    chromeScriptsMap: getEnv('CHROME_SCRIPTS_MAP')?.trim() || undefined,
     chrome: plainToInstance(ChromeConfig, {
       path: getEnv('CHROME_PATH')?.trim(),
       devToolsPort: parseOptionalInt(getEnv('DEVTOOLS_PORT')),

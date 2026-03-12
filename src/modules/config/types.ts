@@ -154,6 +154,14 @@ export class AppConfig {
   @IsString()
   scenesConfigPath?: string;
 
+  @IsOptional()
+  @IsString()
+  chromeScriptsDir?: string;
+
+  @IsOptional()
+  @IsString()
+  chromeScriptsMap?: string;
+
   @ValidateNested()
   @Type(() => ChromeConfig)
   chrome!: ChromeConfig;

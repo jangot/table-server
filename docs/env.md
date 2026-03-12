@@ -27,6 +27,8 @@ On startup, the application loads variables from a `.env` file in the current wo
 | `CHROME_USER_DATA_DIR` | Chrome user data directory path (passed as `--user-data-dir`) | `/tmp/chrome-profile` |
 | `WATCHDOG_CHECK_INTERVAL_MS` | Interval (ms) for watchdog status checks of Chrome and OBS; if not set, watchdog is disabled | `15000` |
 | `WATCHDOG_RESTART_MIN_INTERVAL_MS` | Min interval (ms) between watchdog-triggered restarts (default 10000) | `10000` |
+| `CHROME_SCRIPTS_DIR` | Path to directory with JS script files for domain automation | `/etc/table-server/scripts` |
+| `CHROME_SCRIPTS_MAP` | Path to JSON file mapping hostnames to script filenames (`{ "example.com": "login.js" }`) | `/etc/table-server/scripts/domains.json` |
 
 If `TELEGRAM_BOT_TOKEN` is not set, the Telegram bot is not started. If `ALLOWED_TELEGRAM_USERS` is empty or not set, no user can send commands to the bot.
 
