@@ -36,6 +36,12 @@ export interface ObsMonitor {
   monitorPositionY: number;
 }
 
+export interface ObsSceneItem {
+  sourceName: string;
+  inputKind: string | null;
+  sceneItemId: number;
+}
+
 export interface ObsWebSocketClient {
   connect(): void;
   disconnect(): Promise<void>;
@@ -45,6 +51,9 @@ export interface ObsWebSocketClient {
   setCurrentProgramScene(sceneName: string): Promise<void>;
   openSourceProjector(sourceName: string, monitorIndex: number): Promise<void>;
   getMonitorList(): Promise<{ monitors: ObsMonitor[] }>;
+  getSceneItemList(sceneName: string): Promise<{ sceneItems: ObsSceneItem[] }>;
+  getInputSettings(inputName: string): Promise<{ inputSettings: Record<string, unknown> }>;
+  setInputSettings(inputName: string, inputSettings: Record<string, unknown>): Promise<void>;
 }
 
 export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsWebSocketClient {
@@ -183,6 +192,31 @@ export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsW
         };
       });
       return { monitors };
+    },
+
+    async getSceneItemList(sceneName: string): Promise<{ sceneItems: ObsSceneItem[] }> {
+      if (!obs) throw new Error('OBS WebSocket not connected');
+      const res = await obs.call('GetSceneItemList', { sceneName });
+      const items = ((res as { sceneItems?: unknown[] }).sceneItems ?? []).map((item: unknown) => {
+        const i = item as Record<string, unknown>;
+        return {
+          sourceName: (i.sourceName as string) ?? '',
+          inputKind: (i.inputKind as string | null) ?? null,
+          sceneItemId: (i.sceneItemId as number) ?? 0,
+        };
+      });
+      return { sceneItems: items };
+    },
+
+    async getInputSettings(inputName: string): Promise<{ inputSettings: Record<string, unknown> }> {
+      if (!obs) throw new Error('OBS WebSocket not connected');
+      const res = await obs.call('GetInputSettings', { inputName });
+      return { inputSettings: (res as { inputSettings?: Record<string, unknown> }).inputSettings ?? {} };
+    },
+
+    async setInputSettings(inputName: string, inputSettings: Record<string, unknown>): Promise<void> {
+      if (!obs) throw new Error('OBS WebSocket not connected');
+      await obs.call('SetInputSettings', { inputName, inputSettings });
     },
   };
 }

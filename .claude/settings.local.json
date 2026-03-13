@@ -28,7 +28,8 @@
       "Bash(chmod +x /Users/jangot/Projects/private/table-server/scripts/tasks.sh)",
       "Bash(bash scripts/tasks.sh list --done 2>&1 | head -20)",
       "Bash(find /home/jangot/apps/table-server -maxdepth 3 -type f \\\\\\( -name \"README*\" -o -name \"*.md\" -o -name \".env*\" \\\\\\) 2>/dev/null | head -20)",
-      "Bash(bash /home/jangot/apps/table-server/scripts/show-monitors.sh 2>&1)"
+      "Bash(bash /home/jangot/apps/table-server/scripts/show-monitors.sh 2>&1)",
+      "Bash(wait && cat /tmp/claude-1000/-home-jangot-apps-table-server/326c08be-0085-40a4-a8fc-38ec7300415a/tasks/bf05ooe92.output 2>&1)"
     ],
     "deny": [
       "Bash(git push --force:*)",

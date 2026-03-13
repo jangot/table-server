@@ -95,5 +95,10 @@ export function createObsScenesService(
   });
   client.connect();
   const scenesConfig = loadScenesConfigSync(scenesConfigPath);
-  return createObsScenesServiceImpl({ client, logger, scenesConfig });
+  return createObsScenesServiceImpl({
+    client,
+    logger,
+    scenesConfig,
+    outputSceneName: config.outputSceneName ?? null,
+  });
 }

@@ -50,6 +50,17 @@ function createMockClient(overrides?: Partial<ObsWebSocketClient>): ObsWebSocket
     async getMonitorList() {
       return { monitors: [] };
     },
+    async getSceneItemList() {
+      return {
+        sceneItems: [
+          { sourceName: 'scene-source', inputKind: 'scene', sceneItemId: 1 },
+        ],
+      };
+    },
+    async getInputSettings() {
+      return { inputSettings: { scene: 'Scene 1' } };
+    },
+    async setInputSettings() {},
     ...overrides,
   };
 }
@@ -89,6 +100,19 @@ describe('obs-scenes', () => {
       assert.strictEqual(typeof result.setScene, 'function');
       assert.strictEqual(typeof result.getScenesForDisplay, 'function');
     });
+
+    it('createObsScenesService передаёт outputSceneName в сервис', () => {
+      const config: ObsConfig = {
+        path: '/usr/bin/obs',
+        host: 'localhost',
+        port: 4455,
+        password: 'secret',
+        outputSceneName: 'output.main',
+      };
+      const result = createObsScenesService(config, logger as unknown as Logger);
+      createdService = result;
+      assert.strictEqual(typeof result.setScene, 'function');
+    });
   });
 
   describe('ObsScenesServiceImpl', () => {
@@ -101,14 +125,22 @@ describe('obs-scenes', () => {
 
     it('getCurrentScene returns current scene name', async () => {
       const client = createMockClient();
-      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const service = createObsScenesServiceImpl({
+        client,
+        logger: logger as unknown as Logger,
+        outputSceneName: 'output.main',
+      });
       const current = await service.getCurrentScene();
       assert.strictEqual(current, 'Scene 1');
     });
 
     it('setScene succeeds and logs key=value', async () => {
       const client = createMockClient();
-      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const service = createObsScenesServiceImpl({
+        client,
+        logger: logger as unknown as Logger,
+        outputSceneName: 'output.main',
+      });
       await service.setScene('chrome');
       const logLine = logger.lines.find((l) => l.includes('scene_switch'));
       assert.ok(logLine);
@@ -118,11 +150,15 @@ describe('obs-scenes', () => {
 
     it('setScene with nonexistent scene rejects with SceneNotFoundError', async () => {
       const client = createMockClient({
-        async setCurrentProgramScene() {
+        async setInputSettings() {
           throw new Error('Scene "nonexistent" does not exist');
         },
       });
-      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const service = createObsScenesServiceImpl({
+        client,
+        logger: logger as unknown as Logger,
+        outputSceneName: 'output.main',
+      });
       await assert.rejects(
         () => service.setScene('nonexistent'),
         (err: unknown) => {
@@ -146,11 +182,15 @@ describe('obs-scenes', () => {
 
     it('getCurrentScene returns null when client throws', async () => {
       const client = createMockClient({
-        async getCurrentProgramScene() {
+        async getSceneItemList() {
           throw new Error('OBS WebSocket not connected');
         },
       });
-      const service = createObsScenesServiceImpl({ client, logger: logger as unknown as Logger });
+      const service = createObsScenesServiceImpl({
+        client,
+        logger: logger as unknown as Logger,
+        outputSceneName: 'output.main',
+      });
       const current = await service.getCurrentScene();
       assert.strictEqual(current, null);
       const warnLine = logger.lines.find((l) => l.includes('action=get_current'));
