@@ -24,15 +24,33 @@ export async function launchObs(
   timeoutMs: number,
   logger: Logger
 ): Promise<void> {
-  obsProcess = spawn(obsPath, args, { stdio: 'ignore', shell: false });
+  obsProcess = spawn(obsPath, args, { stdio: ['ignore', 'pipe', 'pipe'], shell: false });
   const proc = obsProcess;
   proc.unref();
+
+  const stderrChunks: Buffer[] = [];
+  proc.stderr?.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
+
+  const stdoutChunks: Buffer[] = [];
+  proc.stdout?.on('data', (chunk: Buffer) => stdoutChunks.push(chunk));
+
+  function logObsOutput(context: string): void {
+    const stderr = Buffer.concat(stderrChunks).toString('utf8').trim();
+    const stdout = Buffer.concat(stdoutChunks).toString('utf8').trim();
+    if (stderr) logger.error(`${context} stderr`, { stderr });
+    if (stdout) logger.warn(`${context} stdout`, { stdout });
+  }
 
   return new Promise((resolve, reject) => {
     proc.on('error', (err) => {
       obsProcess = null;
+      logObsOutput('OBS spawn error');
       logger.error('OBS spawn error', err);
       reject(err);
+    });
+    proc.on('exit', (code, signal) => {
+      logObsOutput('OBS exit');
+      logger.warn('OBS process exit captured in launch', { code, signal });
     });
     proc.on('spawn', () => {
       waitForObsReady(proc, timeoutMs)
@@ -41,6 +59,7 @@ export async function launchObs(
           resolve();
         })
         .catch((err) => {
+          logObsOutput('OBS not ready');
           logger.error('OBS not ready', err);
           proc.kill('SIGTERM');
           obsProcess = null;

@@ -21,7 +21,7 @@ function shouldLog(level: AppConfig['logLevel'], messageLevel: AppConfig['logLev
 function formatMessage(level: string, msg: string, args: unknown[]): string {
   const prefix = `[${new Date().toISOString()}] ${level.toUpperCase()}`;
   if (args.length === 0) return `${prefix} ${msg}`;
-  const rest = args.map((a) => (a instanceof Error ? a.message : String(a))).join(' ');
+  const rest = args.map((a) => (a instanceof Error ? a.message : JSON.stringify(a))).join(' ');
   return `${prefix} ${msg} ${rest}`;
 }
 

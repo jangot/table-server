@@ -34,7 +34,8 @@
       "Bash(timeout 25 node -r ts-node/register --test test/obs-scenes-service.test.ts 2>&1 | grep -E \"\\(ok |not ok|pass|fail\\)\" | head -20)",
       "Bash(timeout 25 node -r ts-node/register --test test/obs-scenes.test.ts 2>&1 | grep -E \"\\(ok |not ok|pass|fail\\)\" | head -30)",
       "Bash(timeout 20 node -r ts-node/register --test test/obs-scenes.test.ts 2>&1 | tail -20)",
-      "Bash(timeout 30 node -r ts-node/register --test test/config.test.ts test/obs-scenes.test.ts test/obs-scenes-scenes-config.test.ts test/obs-scenes-service.test.ts 2>&1 | grep -E \"\\(ok |not ok|# pass|# fail\\)\" | head -40)"
+      "Bash(timeout 30 node -r ts-node/register --test test/config.test.ts test/obs-scenes.test.ts test/obs-scenes-scenes-config.test.ts test/obs-scenes-service.test.ts 2>&1 | grep -E \"\\(ok |not ok|# pass|# fail\\)\" | head -40)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
