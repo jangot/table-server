@@ -8,6 +8,7 @@ import type { ObsConfig } from '../config/types';
 import type { Logger } from '../logger';
 import { createObsWebSocketClient } from './client';
 import type { ObsWebSocketClient } from './client';
+import { bindChromeWindow } from './chrome-window-bind';
 import { createObsScenesServiceImpl } from './scenes-service';
 import { loadScenesConfigSync } from './scenes-config';
 import type { ObsScenesService } from './types';
@@ -25,64 +26,73 @@ export function createObsScenesService(
   logger: Logger,
   scenesConfigPath?: string
 ): ObsScenesService {
-  const { projectorMonitorName, projectorSceneName } = config;
+  const { projectorMonitorName, projectorSceneName, chromeSourceName } = config;
+
+  const hasProjector = projectorMonitorName != null;
+  const hasChromeBind = chromeSourceName != null;
 
   // eslint-disable-next-line prefer-const
   let client: ObsWebSocketClient;
 
   const onConnected =
-    projectorMonitorName != null
+    hasProjector || hasChromeBind
       ? async () => {
-          let monitors: Array<{ monitorIndex: number; monitorName: string }>;
-          try {
-            ({ monitors } = await client.getMonitorList());
-          } catch (err) {
-            logger.warn(`obs_projector action=get_monitors error=${err instanceof Error ? err.message : String(err)}`);
-            return;
-          }
-
-          const monitor = monitors.find(
-            (m) => m.monitorName === projectorMonitorName || m.monitorName.startsWith(`${projectorMonitorName}(`)
-          );
-          if (!monitor) {
-            logger.warn(`obs_projector action=open status=skip reason=monitor_not_found name=${projectorMonitorName}`);
-            return;
-          }
-
-          let scenes: Array<{ sceneName: string }>;
-          try {
-            ({ scenes } = await client.getSceneList());
-          } catch (err) {
-            logger.warn(`obs_projector action=get_scenes error=${err instanceof Error ? err.message : String(err)}`);
-            return;
-          }
-          if (scenes.length === 0) {
-            logger.warn('obs_projector action=open status=skip reason=empty_scene_list');
-            return;
-          }
-
-          let projectorScene =
-            projectorSceneName != null
-              ? scenes.find((s) => s.sceneName === projectorSceneName) ?? null
-              : null;
-
-          if (!projectorScene) {
-            projectorScene = scenes.find((s) => s.sceneName.startsWith('output.')) ?? null;
-            if (!projectorScene) {
-              logger.warn(
-                `obs_projector action=open status=skip reason=scene_not_found projectorSceneName=${projectorSceneName ?? ''}`
-              );
+          if (hasProjector) {
+            let monitors: Array<{ monitorIndex: number; monitorName: string }>;
+            try {
+              ({ monitors } = await client.getMonitorList());
+            } catch (err) {
+              logger.warn(`obs_projector action=get_monitors error=${err instanceof Error ? err.message : String(err)}`);
               return;
             }
-            logger.warn(
-              `obs_projector action=open status=fallback reason=projector_scene_not_found fallback_scene=${projectorScene.sceneName}`
+
+            const monitor = monitors.find(
+              (m) => m.monitorName === projectorMonitorName || m.monitorName.startsWith(`${projectorMonitorName}(`)
+            );
+            if (!monitor) {
+              logger.warn(`obs_projector action=open status=skip reason=monitor_not_found name=${projectorMonitorName}`);
+              return;
+            }
+
+            let scenes: Array<{ sceneName: string }>;
+            try {
+              ({ scenes } = await client.getSceneList());
+            } catch (err) {
+              logger.warn(`obs_projector action=get_scenes error=${err instanceof Error ? err.message : String(err)}`);
+              return;
+            }
+            if (scenes.length === 0) {
+              logger.warn('obs_projector action=open status=skip reason=empty_scene_list');
+              return;
+            }
+
+            let projectorScene =
+              projectorSceneName != null
+                ? scenes.find((s) => s.sceneName === projectorSceneName) ?? null
+                : null;
+
+            if (!projectorScene) {
+              projectorScene = scenes.find((s) => s.sceneName.startsWith('output.')) ?? null;
+              if (!projectorScene) {
+                logger.warn(
+                  `obs_projector action=open status=skip reason=scene_not_found projectorSceneName=${projectorSceneName ?? ''}`
+                );
+                return;
+              }
+              logger.warn(
+                `obs_projector action=open status=fallback reason=projector_scene_not_found fallback_scene=${projectorScene.sceneName}`
+              );
+            }
+
+            await client.openSourceProjector(projectorScene.sceneName, monitor.monitorIndex);
+            logger.info(
+              `obs_projector action=open scene=${projectorScene.sceneName} monitor_name=${projectorMonitorName} monitor_index=${monitor.monitorIndex}`
             );
           }
 
-          await client.openSourceProjector(projectorScene.sceneName, monitor.monitorIndex);
-          logger.info(
-            `obs_projector action=open scene=${projectorScene.sceneName} monitor_name=${projectorMonitorName} monitor_index=${monitor.monitorIndex}`
-          );
+          if (hasChromeBind) {
+            await bindChromeWindow(client, chromeSourceName!, logger);
+          }
         }
       : undefined;
 

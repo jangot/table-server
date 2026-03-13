@@ -7,6 +7,7 @@ import {
   SceneNotFoundError,
 } from '../src/modules/obs-scenes';
 import { createObsScenesServiceImpl } from '../src/modules/obs-scenes/scenes-service';
+import { bindChromeWindow } from '../src/modules/obs-scenes/chrome-window-bind';
 import type { ObsWebSocketClient } from '../src/modules/obs-scenes/client';
 import type { ObsConfig } from '../src/modules/config/types';
 
@@ -241,6 +242,87 @@ describe('obs-scenes', () => {
       assert.deepStrictEqual(display, []);
       const warnLine = logger.lines.find((l) => l.includes('action=get_scenes_for_display'));
       assert.ok(warnLine);
+    });
+  });
+
+  describe('bindChromeWindow', () => {
+    function makeLogger() {
+      return createMockLogger();
+    }
+
+    function makeClient(overrides?: Partial<ObsWebSocketClient>): ObsWebSocketClient {
+      return createMockClient(overrides);
+    }
+
+    it('вызывает setInputSettings с первым XID', async () => {
+      const calls: Array<[string, Record<string, unknown>]> = [];
+      const client = makeClient({
+        async setInputSettings(name, settings) { calls.push([name, settings]); },
+      });
+      const logger = makeLogger();
+      const execFileFn = async () => ({ stdout: '12345\n67890\n' });
+
+      await bindChromeWindow(client, 'Chrome Source', logger as unknown as Logger, execFileFn);
+
+      assert.strictEqual(calls.length, 1);
+      assert.deepStrictEqual(calls[0], ['Chrome Source', { capture_window: '12345' }]);
+      assert.ok(logger.lines.some((l) => l.includes('action=found xid=12345')));
+      assert.ok(logger.lines.some((l) => l.includes('action=bound xid=12345')));
+    });
+
+    it('берёт первую строку из множественных XID', async () => {
+      const calls: Array<[string, Record<string, unknown>]> = [];
+      const client = makeClient({
+        async setInputSettings(name, settings) { calls.push([name, settings]); },
+      });
+      const execFileFn = async () => ({ stdout: '111\n222\n333\n' });
+      await bindChromeWindow(client, 'Source', makeLogger() as unknown as Logger, execFileFn);
+      assert.deepStrictEqual(calls[0], ['Source', { capture_window: '111' }]);
+    });
+
+    it('ретраит при ошибке xdotool и вызывает setInputSettings при успехе', async () => {
+      const calls: Array<[string, Record<string, unknown>]> = [];
+      const client = makeClient({
+        async setInputSettings(name, settings) { calls.push([name, settings]); },
+      });
+      const logger = makeLogger();
+      let attempt = 0;
+      const execFileFn = async () => {
+        attempt++;
+        if (attempt < 3) throw new Error('no windows');
+        return { stdout: '99999\n' };
+      };
+
+      await bindChromeWindow(client, 'Source', logger as unknown as Logger, execFileFn);
+
+      assert.strictEqual(calls.length, 1);
+      assert.deepStrictEqual(calls[0], ['Source', { capture_window: '99999' }]);
+      assert.strictEqual(attempt, 3);
+    });
+
+    it('завершается без исключения при таймауте (xdotool всегда падает)', async () => {
+      const client = makeClient();
+      const logger = makeLogger();
+      const execFileFn = async () => { throw new Error('no windows'); };
+
+      await assert.doesNotReject(() =>
+        bindChromeWindow(client, 'Source', logger as unknown as Logger, execFileFn, 50)
+      );
+      assert.ok(logger.lines.some((l) => l.includes('action=timeout')));
+    });
+
+    it('завершается без исключения если setInputSettings бросает ошибку', async () => {
+      const client = makeClient({
+        async setInputSettings() { throw new Error('OBS error'); },
+      });
+      const logger = makeLogger();
+      const execFileFn = async () => ({ stdout: '12345\n' });
+
+      await assert.doesNotReject(() =>
+        bindChromeWindow(client, 'Source', logger as unknown as Logger, execFileFn)
+      );
+      assert.ok(logger.lines.some((l) => l.includes('action=set_input_settings_failed')));
+      assert.ok(logger.lines.some((l) => l.includes('OBS error')));
     });
   });
 

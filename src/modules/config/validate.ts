@@ -88,6 +88,7 @@ export function validateEnv(): AppConfig {
       projectorMonitorName: getEnv('OBS_PROJECTOR_MONITOR_NAME')?.trim() || undefined,
       projectorSceneName: getEnv('OBS_PROJECTOR_SCENE_NAME')?.trim() || undefined,
       outputSceneName: getEnv('OBS_OUTPUT_SCENE_NAME')?.trim() || undefined,
+      chromeSourceName: getEnv('OBS_CHROME_SOURCE_NAME')?.trim() || undefined,
     }),
     telegram: plainToInstance(TelegramConfig, {
       botToken: getEnv('TELEGRAM_BOT_TOKEN')?.trim(),

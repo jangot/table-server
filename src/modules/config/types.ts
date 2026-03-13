@@ -106,6 +106,10 @@ export class ObsConfig {
   @IsOptional()
   @IsString()
   outputSceneName?: string;
+
+  @IsOptional()
+  @IsString()
+  chromeSourceName?: string;
 }
 
 export class TelegramConfig {
