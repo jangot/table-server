@@ -37,7 +37,7 @@ export async function launchObs(
   function logObsOutput(context: string): void {
     const stderr = Buffer.concat(stderrChunks).toString('utf8').trim();
     const stdout = Buffer.concat(stdoutChunks).toString('utf8').trim();
-    if (stderr) logger.error(`${context} stderr`, { stderr });
+    if (stderr) logger.warn(`${context} stderr`, { stderr });
     if (stdout) logger.warn(`${context} stdout`, { stdout });
   }
 
