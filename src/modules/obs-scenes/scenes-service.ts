@@ -17,6 +17,13 @@ export interface ObsScenesServiceConfig {
 export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsScenesService {
   const { client, logger } = config;
 
+  function isSwitchableScene(entry: SceneConfigEntry | undefined): boolean {
+    if (entry?.enabled === false) return false;
+    if (!entry?.type) return true;
+    if (entry.type === 'main') return false;
+    return true;
+  }
+
   return {
     async getScenes(): Promise<string[]> {
       try {
@@ -33,13 +40,19 @@ export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsS
         const { scenes } = await client.getSceneList();
         const names = scenes.map((s) => s.sceneName).filter(Boolean);
         const configMap = new Map((config.scenesConfig ?? []).map((e) => [e.name, e]));
-        return names.map((name) => {
+        const result: SceneForDisplay[] = [];
+
+        for (const name of names) {
           const entry = configMap.get(name);
+          if (!isSwitchableScene(entry)) continue;
+
           const out: SceneForDisplay = { name, enabled: entry?.enabled ?? true };
           if (entry?.title !== undefined) out.title = entry.title;
           if (entry?.type !== undefined) out.type = entry.type;
-          return out;
-        });
+          result.push(out);
+        }
+
+        return result;
       } catch (err) {
         logger.warn(`obs_scenes action=get_scenes_for_display error=${err instanceof Error ? err.message : String(err)}`);
         return [];

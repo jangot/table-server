@@ -7,6 +7,13 @@
 export interface SceneConfigEntry {
   name: string;
   title?: string;
+  /**
+   * Optional role/type of the scene (used by UI and Telegram):
+   * - "main": projector scene (not switchable by user)
+   * - "output": aggregate/output scene (switchable)
+   * - "input": input scene (switchable)
+   * - "backup" | "default": special safe-state scenes
+   */
   type?: string;
   enabled?: boolean;
 }

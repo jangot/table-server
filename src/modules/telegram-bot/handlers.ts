@@ -183,6 +183,13 @@ export async function handleScene(ctx: CommandContext, deps: TelegramBotDeps): P
     return;
   }
   try {
+    const scenes = await deps.obsScenes.getScenesForDisplay();
+    const isAllowed = scenes.some((s) => s.name === sceneName);
+    if (!isAllowed) {
+      await ctx.reply(`Сцена недоступна для переключения: ${sceneName}`).catch(() => {});
+      return;
+    }
+
     await deps.obsScenes.setScene(sceneName);
     deps.logger.info('Telegram bot: remote command processed', { type: 'scene', scene: sceneName, userId: from.id });
     await ctx.reply(`Сцена переключена: ${sceneName}`).catch(() => {});

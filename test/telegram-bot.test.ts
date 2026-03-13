@@ -228,7 +228,7 @@ describe('telegram-bot', () => {
     assert.strictEqual(ctx.replyText, 'Доступ запрещён.');
   });
 
-  it('/scene backup: setScene called with "backup"', async () => {
+  it('/scene backup: replies that scene is not switchable', async () => {
     let calledWith: string | null = null;
     const ctx = makeMockCtx('/scene backup', allowedUser);
     const deps: TelegramBotDeps = {
@@ -241,8 +241,8 @@ describe('telegram-bot', () => {
       obsScenes: makeObsScenes({ setScene: async (n) => { calledWith = n; } }),
     };
     await handleScene(ctx, deps);
-    assert.strictEqual(calledWith, 'backup');
-    assert.ok(ctx.replyText.includes('backup'));
+    assert.strictEqual(calledWith, null);
+    assert.strictEqual(ctx.replyText, 'Сцена недоступна для переключения: backup');
   });
 
   it('/scene: empty name replies usage message', async () => {
@@ -270,7 +270,10 @@ describe('telegram-bot', () => {
       isChromeAlive: () => true,
       isObsAlive: () => true,
       obsScenes: makeObsScenes({
-        setScene: async () => { throw new SceneNotFoundError('nonexistent'); },
+        getScenesForDisplay: async () => [{ name: 'nonexistent', enabled: true }],
+        setScene: async () => {
+          throw new SceneNotFoundError('nonexistent');
+        },
       }),
     };
     await handleScene(ctx, deps);

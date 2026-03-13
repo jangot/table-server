@@ -41,6 +41,9 @@
         <%= !connected ? 'disabled' : '' %>
       >
         <%= scene.title || scene.name %>
+        <% if (scene.type) { %>
+          (<%= scene.type %>)
+        <% } %>
       </button>
     <% }) %>
   </div>

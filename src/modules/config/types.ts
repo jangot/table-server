@@ -94,6 +94,10 @@ export class ObsConfig {
   @IsOptional()
   @IsString()
   projectorMonitorName?: string;
+
+  @IsOptional()
+  @IsString()
+  projectorSceneName?: string;
 }
 
 export class TelegramConfig {

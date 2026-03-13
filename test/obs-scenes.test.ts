@@ -171,10 +171,10 @@ describe('obs-scenes', () => {
       ]);
     });
 
-    it('getScenesForDisplay with config enriches scenes from config', async () => {
+    it('getScenesForDisplay with config enriches scenes from config and filters non-switchable', async () => {
       const client = createMockClient();
       const scenesConfig = [
-        { name: 'Scene 1', title: 'First Scene', type: 'working', enabled: false },
+        { name: 'Scene 1', title: 'First Scene', type: 'main', enabled: true },
       ];
       const service = createObsScenesServiceImpl({
         client,
@@ -183,7 +183,6 @@ describe('obs-scenes', () => {
       });
       const display = await service.getScenesForDisplay();
       assert.deepStrictEqual(display, [
-        { name: 'Scene 1', title: 'First Scene', type: 'working', enabled: false },
         { name: 'Scene 2', enabled: true },
       ]);
     });

@@ -242,6 +242,15 @@ describe('config', () => {
     unsetEnv(['CHROME_WINDOW_POSITION_X', 'CHROME_WINDOW_POSITION_Y']);
   });
 
+  it('OBS_PROJECTOR_SCENE_NAME is passed through when set', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.OBS_PROJECTOR_SCENE_NAME = 'main';
+    const cfg = validateEnv();
+    assert.strictEqual(cfg.obs.projectorSceneName, 'main');
+    unsetEnv(['OBS_PROJECTOR_SCENE_NAME']);
+  });
+
   it('OBS_HOST, OBS_PORT, OBS_PASSWORD when set are in config', () => {
     resetConfigForTesting();
     setEnv(REQUIRED);
