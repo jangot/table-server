@@ -39,7 +39,9 @@ export interface ObsMonitor {
 export interface ObsSceneItem {
   sourceName: string;
   inputKind: string | null;
+  sourceType: string | null;
   sceneItemId: number;
+  sceneItemEnabled: boolean;
 }
 
 export interface ObsWebSocketClient {
@@ -52,6 +54,7 @@ export interface ObsWebSocketClient {
   openSourceProjector(sourceName: string, monitorIndex: number): Promise<void>;
   getMonitorList(): Promise<{ monitors: ObsMonitor[] }>;
   getSceneItemList(sceneName: string): Promise<{ sceneItems: ObsSceneItem[] }>;
+  setSceneItemEnabled(sceneName: string, sceneItemId: number, sceneItemEnabled: boolean): Promise<void>;
   getInputSettings(inputName: string): Promise<{ inputSettings: Record<string, unknown> }>;
   setInputSettings(inputName: string, inputSettings: Record<string, unknown>): Promise<void>;
 }
@@ -202,10 +205,17 @@ export function createObsWebSocketClient(config: ObsWebSocketClientConfig): ObsW
         return {
           sourceName: (i.sourceName as string) ?? '',
           inputKind: (i.inputKind as string | null) ?? null,
+          sourceType: (i.sourceType as string | null) ?? null,
           sceneItemId: (i.sceneItemId as number) ?? 0,
+          sceneItemEnabled: (i.sceneItemEnabled as boolean) ?? true,
         };
       });
       return { sceneItems: items };
+    },
+
+    async setSceneItemEnabled(sceneName: string, sceneItemId: number, sceneItemEnabled: boolean): Promise<void> {
+      if (!obs) throw new Error('OBS WebSocket not connected');
+      await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled });
     },
 
     async getInputSettings(inputName: string): Promise<{ inputSettings: Record<string, unknown> }> {

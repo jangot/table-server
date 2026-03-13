@@ -29,7 +29,12 @@
       "Bash(bash scripts/tasks.sh list --done 2>&1 | head -20)",
       "Bash(find /home/jangot/apps/table-server -maxdepth 3 -type f \\\\\\( -name \"README*\" -o -name \"*.md\" -o -name \".env*\" \\\\\\) 2>/dev/null | head -20)",
       "Bash(bash /home/jangot/apps/table-server/scripts/show-monitors.sh 2>&1)",
-      "Bash(wait && cat /tmp/claude-1000/-home-jangot-apps-table-server/326c08be-0085-40a4-a8fc-38ec7300415a/tasks/bf05ooe92.output 2>&1)"
+      "Bash(wait && cat /tmp/claude-1000/-home-jangot-apps-table-server/326c08be-0085-40a4-a8fc-38ec7300415a/tasks/bf05ooe92.output 2>&1)",
+      "Bash(node -r ts-node/register --test test/obs-scenes.test.ts test/obs-scenes-service.test.ts 2>&1 | grep -E \"^\\(ok|not ok|# Subtest|TAP|1\\\\.\\\\.|FailureType|error\\)\" | head -50)",
+      "Bash(timeout 25 node -r ts-node/register --test test/obs-scenes-service.test.ts 2>&1 | grep -E \"\\(ok |not ok|pass|fail\\)\" | head -20)",
+      "Bash(timeout 25 node -r ts-node/register --test test/obs-scenes.test.ts 2>&1 | grep -E \"\\(ok |not ok|pass|fail\\)\" | head -30)",
+      "Bash(timeout 20 node -r ts-node/register --test test/obs-scenes.test.ts 2>&1 | tail -20)",
+      "Bash(timeout 30 node -r ts-node/register --test test/config.test.ts test/obs-scenes.test.ts test/obs-scenes-scenes-config.test.ts test/obs-scenes-service.test.ts 2>&1 | grep -E \"\\(ok |not ok|# pass|# fail\\)\" | head -40)"
     ],
     "deny": [
       "Bash(git push --force:*)",

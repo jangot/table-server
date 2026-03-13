@@ -53,10 +53,11 @@ function createMockClient(overrides?: Partial<ObsWebSocketClient>): ObsWebSocket
     async getSceneItemList() {
       return {
         sceneItems: [
-          { sourceName: 'scene-source', inputKind: 'scene', sceneItemId: 1 },
+          { sourceName: 'scene-source', inputKind: null, sourceType: 'OBS_SOURCE_TYPE_SCENE', sceneItemId: 1, sceneItemEnabled: true },
         ],
       };
     },
+    async setSceneItemEnabled() {},
     async getInputSettings() {
       return { inputSettings: { scene: 'Scene 1' } };
     },
@@ -123,7 +124,7 @@ describe('obs-scenes', () => {
       assert.deepStrictEqual(scenes, ['Scene 1', 'Scene 2']);
     });
 
-    it('getCurrentScene returns current scene name', async () => {
+    it('getCurrentScene returns enabled scene name', async () => {
       const client = createMockClient();
       const service = createObsScenesServiceImpl({
         client,
@@ -131,7 +132,7 @@ describe('obs-scenes', () => {
         outputSceneName: 'output.main',
       });
       const current = await service.getCurrentScene();
-      assert.strictEqual(current, 'Scene 1');
+      assert.strictEqual(current, 'scene-source');
     });
 
     it('setScene succeeds and logs key=value', async () => {
@@ -141,10 +142,10 @@ describe('obs-scenes', () => {
         logger: logger as unknown as Logger,
         outputSceneName: 'output.main',
       });
-      await service.setScene('chrome');
+      await service.setScene('scene-source');
       const logLine = logger.lines.find((l) => l.includes('scene_switch'));
       assert.ok(logLine);
-      assert.ok(logLine!.includes('to=chrome'));
+      assert.ok(logLine!.includes('to=scene-source'));
       assert.ok(logLine!.includes('success=true'));
     });
 

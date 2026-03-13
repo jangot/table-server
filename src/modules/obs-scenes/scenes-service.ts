@@ -18,13 +18,9 @@ export interface ObsScenesServiceConfig {
 export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsScenesService {
   const { client, logger } = config;
 
-  async function findNestedSceneSource(outputSceneName: string): Promise<string> {
+  async function getNestedSceneItems(outputSceneName: string) {
     const { sceneItems } = await client.getSceneItemList(outputSceneName);
-    const sceneSource = sceneItems.find((item) => item.inputKind === 'scene');
-    if (!sceneSource) {
-      throw new Error(`No nested scene source found in output scene "${outputSceneName}"`);
-    }
-    return sceneSource.sourceName;
+    return sceneItems.filter((item) => item.sourceType === 'OBS_SOURCE_TYPE_SCENE');
   }
 
   function isSwitchableScene(entry: SceneConfigEntry | undefined): boolean {
@@ -76,10 +72,9 @@ export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsS
         return null;
       }
       try {
-        const sourceName = await findNestedSceneSource(outputSceneName);
-        const { inputSettings } = await client.getInputSettings(sourceName);
-        const sceneName = inputSettings['scene'] as string | undefined;
-        return sceneName || null;
+        const items = await getNestedSceneItems(outputSceneName);
+        const enabled = items.find((item) => item.sceneItemEnabled);
+        return enabled?.sourceName ?? null;
       } catch (err) {
         logger.warn(`obs_scenes action=get_current error=${err instanceof Error ? err.message : String(err)}`);
         return null;
@@ -92,17 +87,18 @@ export function createObsScenesServiceImpl(config: ObsScenesServiceConfig): ObsS
         throw new Error('OBS output scene not configured (OBS_OUTPUT_SCENE_NAME is not set)');
       }
       try {
-        const sourceName = await findNestedSceneSource(outputSceneName);
-        await client.setInputSettings(sourceName, { scene: name });
-        logger.info(`scene_switch to=${name} success=true`);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        const isNotFound =
-          /scene.*not found|does not exist|invalid.*scene/i.test(msg) ||
-          (err as { code?: number }).code === 100;
-        if (isNotFound) {
+        const items = await getNestedSceneItems(outputSceneName);
+        const target = items.find((item) => item.sourceName === name);
+        if (!target) {
           throw new SceneNotFoundError(name, `Scene not found: ${name}`);
         }
+        for (const item of items) {
+          await client.setSceneItemEnabled(outputSceneName, item.sceneItemId, item.sourceName === name);
+        }
+        logger.info(`scene_switch to=${name} success=true`);
+      } catch (err) {
+        if (err instanceof SceneNotFoundError) throw err;
+        const msg = err instanceof Error ? err.message : String(err);
         logger.error(`scene_switch to=${name} success=false error=${msg}`);
         throw err;
       }
