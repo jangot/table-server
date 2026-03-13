@@ -81,6 +81,10 @@ export class ObsConfig {
 
   @IsString()
   @IsNotEmpty()
+  configDir!: string;
+
+  @IsString()
+  @IsNotEmpty()
   host!: string;
 
   @IsNumber()

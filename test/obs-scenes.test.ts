@@ -90,6 +90,7 @@ describe('obs-scenes', () => {
     it('returns service with getScenes, getCurrentScene, setScene, getScenesForDisplay when config is set', () => {
       const config: ObsConfig = {
         path: '/usr/bin/obs',
+        configDir: '/tmp/obs-config',
         host: 'localhost',
         port: 4455,
         password: 'secret',
@@ -105,6 +106,7 @@ describe('obs-scenes', () => {
     it('createObsScenesService передаёт outputSceneName в сервис', () => {
       const config: ObsConfig = {
         path: '/usr/bin/obs',
+        configDir: '/tmp/obs-config',
         host: 'localhost',
         port: 4455,
         password: 'secret',

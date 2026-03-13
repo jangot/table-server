@@ -10,6 +10,7 @@ import {
 const REQUIRED = {
   CHROME_PATH: '/usr/bin/chrome',
   OBS_PATH: '/usr/bin/obs',
+  OBS_CONFIG_DIR: '/tmp/obs-config',
   OBS_HOST: 'localhost',
   OBS_PORT: '4455',
   OBS_PASSWORD: '',
@@ -48,6 +49,7 @@ describe('config', () => {
       'CHROME_WINDOW_POSITION_X',
       'CHROME_WINDOW_POSITION_Y',
       'OBS_READY_TIMEOUT',
+      'OBS_CONFIG_DIR',
       'OBS_PROFILE_PATH',
       'SCENES_CONFIG_PATH',
       'OBS_HOST',
@@ -130,6 +132,26 @@ describe('config', () => {
     const config = getConfig();
     assert.strictEqual(config.obs.profilePath, '/home/user/.config/obs-studio');
     delete process.env.OBS_PROFILE_PATH;
+  });
+
+  it('OBS_CONFIG_DIR is passed through to obs.configDir', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    process.env.OBS_CONFIG_DIR = '/custom/obs-config';
+    const config = getConfig();
+    assert.strictEqual(config.obs.configDir, '/custom/obs-config');
+    delete process.env.OBS_CONFIG_DIR;
+  });
+
+  it('validateEnv throws when OBS_CONFIG_DIR is missing', () => {
+    resetConfigForTesting();
+    setEnv(REQUIRED);
+    delete process.env.OBS_CONFIG_DIR;
+    assert.throws(
+      () => validateEnv(),
+      /obs\.configDir/
+    );
+    setEnv(REQUIRED);
   });
 
   it('optional SCENES_CONFIG_PATH is in config when set', () => {

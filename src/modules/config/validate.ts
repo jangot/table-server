@@ -81,6 +81,7 @@ export function validateEnv(): AppConfig {
       path: getEnv('OBS_PATH')?.trim(),
       readyTimeout: parseOptionalInt(getEnv('OBS_READY_TIMEOUT')),
       profilePath: getEnv('OBS_PROFILE_PATH')?.trim() || undefined,
+      configDir: getEnv('OBS_CONFIG_DIR')?.trim(),
       host: getEnv('OBS_HOST')?.trim(),
       port: parseOptionalInt(getEnv('OBS_PORT')),
       password: getEnv('OBS_PASSWORD'),
