@@ -4,7 +4,7 @@ import type { Logger } from '../logger';
 import { waitForObsReady } from './ready';
 
 /**
- * Security: obsPath and args are passed to spawn with shell: false and must
+ * Security: obsPath, args, and env are passed to spawn with shell: false and must
  * contain only values from config (env), never user input — protects against command injection.
  */
 
@@ -22,9 +22,14 @@ export async function launchObs(
   obsPath: string,
   args: string[],
   timeoutMs: number,
-  logger: Logger
+  logger: Logger,
+  env?: NodeJS.ProcessEnv
 ): Promise<void> {
-  obsProcess = spawn(obsPath, args, { stdio: ['ignore', 'pipe', 'pipe'], shell: false });
+  obsProcess = spawn(obsPath, args, {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: false,
+    ...(env !== undefined ? { env } : {}),
+  });
   const proc = obsProcess;
   proc.unref();
 

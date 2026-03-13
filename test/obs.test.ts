@@ -24,30 +24,23 @@ function baseConfig(obsOverrides: { profilePath?: string; configDir?: string } =
 }
 
 describe('buildObsArgs', () => {
-  it('returns [--config-dir, path] when no profilePath', () => {
+  it('returns empty array when no profilePath', () => {
     const config = baseConfig();
     const args = buildObsArgs(config);
-    assert.ok(Array.isArray(args));
-    assert.strictEqual(args.length, 2);
-    assert.strictEqual(args[0], '--config-dir');
-    assert.strictEqual(args[1], '/tmp/obs-config');
+    assert.deepStrictEqual(args, []);
   });
 
-  it('returns [--config-dir, path, --profile=...] when both set', () => {
+  it('returns [--profile=...] when profilePath is set', () => {
     const config = baseConfig({ profilePath: '/home/user/.config/obs-studio' });
     const args = buildObsArgs(config);
-    assert.ok(Array.isArray(args));
-    assert.strictEqual(args.length, 3);
-    assert.strictEqual(args[0], '--config-dir');
-    assert.strictEqual(args[1], '/tmp/obs-config');
-    assert.strictEqual(args[2], '--profile=/home/user/.config/obs-studio');
+    assert.deepStrictEqual(args, ['--profile=/home/user/.config/obs-studio']);
   });
 
-  it('handles path with spaces correctly as separate array element', () => {
+  it('configDir does not appear in args', () => {
     const config = baseConfig({ configDir: '/path/with spaces/obs' });
     const args = buildObsArgs(config);
-    assert.strictEqual(args[0], '--config-dir');
-    assert.strictEqual(args[1], '/path/with spaces/obs');
+    assert.ok(!args.some(a => a.includes('config-dir')));
+    assert.ok(!args.some(a => a.includes('/path/with spaces/obs')));
   });
 });
 

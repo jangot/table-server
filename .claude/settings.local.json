@@ -38,7 +38,8 @@
       "Bash(npx tsc:*)",
       "Bash(node -r ts-node/register --test test/obs-scenes.test.ts 2>&1 | tail -40)",
       "Bash(node -r ts-node/register --test test/config.test.ts test/obs.test.ts 2>&1 | tail -20)",
-      "Bash(obs --help 2>&1 | head -40)"
+      "Bash(obs --help 2>&1 | head -40)",
+      "Bash(timeout 10 node -r ts-node/register test/obs.test.ts 2>&1 || echo \"EXIT: $?\")"
     ],
     "deny": [
       "Bash(git push --force:*)",
