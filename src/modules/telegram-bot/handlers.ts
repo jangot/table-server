@@ -150,12 +150,13 @@ export async function handleScenes(ctx: CommandContext, deps: TelegramBotDeps): 
     return;
   }
   try {
-    const scenes = await deps.obsScenes.getScenesForDisplay();
+    const allScenes = await deps.obsScenes.getScenesForDisplay();
+    const scenes = allScenes.filter((s) => s.name.startsWith('src.'));
     if (scenes.length === 0) {
       await ctx.reply('Сцены не найдены.').catch(() => {});
       return;
     }
-    const lines = scenes.map((s) => `• ${s.title ?? s.name}`);
+    const lines = scenes.map((s) => `• ${s.title ?? s.name.slice(4)}`);
     await ctx.reply(lines.join('\n')).catch(() => {});
     deps.logger.info('Telegram bot: remote command processed', { type: 'scenes', userId: from.id });
   } catch (err) {
@@ -177,25 +178,27 @@ export async function handleScene(ctx: CommandContext, deps: TelegramBotDeps): P
     await ctx.reply('OBS scenes недоступны.').catch(() => {});
     return;
   }
-  const sceneName = ctx.message.text.replace(/^\s*\/scene\s*/i, '').trim();
-  if (!sceneName) {
+  const inputName = ctx.message.text.replace(/^\s*\/scene\s*/i, '').trim();
+  if (!inputName) {
     await ctx.reply('Использование: /scene <name>').catch(() => {});
     return;
   }
   try {
+    const fullName = `src.${inputName}`;
     const scenes = await deps.obsScenes.getScenesForDisplay();
-    const isAllowed = scenes.some((s) => s.name === sceneName);
+    const isAllowed = scenes.some((s) => s.name === fullName);
     if (!isAllowed) {
-      await ctx.reply(`Сцена недоступна для переключения: ${sceneName}`).catch(() => {});
+      await ctx.reply(`Сцена недоступна для переключения: ${inputName}`).catch(() => {});
       return;
     }
 
-    await deps.obsScenes.setScene(sceneName);
-    deps.logger.info('Telegram bot: remote command processed', { type: 'scene', scene: sceneName, userId: from.id });
-    await ctx.reply(`Сцена переключена: ${sceneName}`).catch(() => {});
+    await deps.obsScenes.setScene(fullName);
+    deps.logger.info('Telegram bot: remote command processed', { type: 'scene', scene: fullName, userId: from.id });
+    await ctx.reply(`Сцена переключена: ${inputName}`).catch(() => {});
   } catch (err) {
     if (err instanceof SceneNotFoundError) {
-      await ctx.reply(`Сцена не найдена: ${err.sceneName}`).catch(() => {});
+      const displayName = err.sceneName.startsWith('src.') ? err.sceneName.slice(4) : err.sceneName;
+      await ctx.reply(`Сцена не найдена: ${displayName}`).catch(() => {});
     } else {
       const msg = err instanceof Error ? err.message : String(err);
       await ctx.reply(`Ошибка: ${msg}`).catch(() => {});

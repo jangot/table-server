@@ -24,10 +24,10 @@ const disallowedUser = { id: 456, username: 'bob' };
 
 function makeObsScenes(overrides?: Partial<ObsScenesService>): ObsScenesService {
   return {
-    getScenes: async () => ['scene1', 'scene2'],
+    getScenes: async () => ['src.scene1', 'src.scene2'],
     getScenesForDisplay: async (): Promise<SceneForDisplay[]> => [
-      { name: 'scene1', title: 'Scene One' },
-      { name: 'scene2' },
+      { name: 'src.scene1', title: 'Scene One' },
+      { name: 'src.scene2' },
     ],
     getCurrentScene: async () => 'scene1',
     setScene: async () => {},
@@ -245,6 +245,23 @@ describe('telegram-bot', () => {
     assert.strictEqual(ctx.replyText, 'Сцена недоступна для переключения: backup');
   });
 
+  it('/scene scene1: switches to src.scene1 and replies with short name', async () => {
+    let calledWith: string | null = null;
+    const ctx = makeMockCtx('/scene scene1', allowedUser);
+    const deps: TelegramBotDeps = {
+      config: testConfig,
+      logger: makeLogger(),
+      allowedUsers: { isAllowed: () => true },
+      navigateToUrl: async () => {},
+      isChromeAlive: () => true,
+      isObsAlive: () => true,
+      obsScenes: makeObsScenes({ setScene: async (n) => { calledWith = n; } }),
+    };
+    await handleScene(ctx, deps);
+    assert.strictEqual(calledWith, 'src.scene1');
+    assert.strictEqual(ctx.replyText, 'Сцена переключена: scene1');
+  });
+
   it('/scene: empty name replies usage message', async () => {
     const ctx = makeMockCtx('/scene', allowedUser);
     const deps: TelegramBotDeps = {
@@ -270,9 +287,9 @@ describe('telegram-bot', () => {
       isChromeAlive: () => true,
       isObsAlive: () => true,
       obsScenes: makeObsScenes({
-        getScenesForDisplay: async () => [{ name: 'nonexistent', enabled: true }],
+        getScenesForDisplay: async () => [{ name: 'src.nonexistent', enabled: true }],
         setScene: async () => {
-          throw new SceneNotFoundError('nonexistent');
+          throw new SceneNotFoundError('src.nonexistent');
         },
       }),
     };

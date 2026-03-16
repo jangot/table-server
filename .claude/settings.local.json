@@ -39,7 +39,11 @@
       "Bash(node -r ts-node/register --test test/obs-scenes.test.ts 2>&1 | tail -40)",
       "Bash(node -r ts-node/register --test test/config.test.ts test/obs.test.ts 2>&1 | tail -20)",
       "Bash(obs --help 2>&1 | head -40)",
-      "Bash(timeout 10 node -r ts-node/register test/obs.test.ts 2>&1 || echo \"EXIT: $?\")"
+      "Bash(timeout 10 node -r ts-node/register test/obs.test.ts 2>&1 || echo \"EXIT: $?\")",
+      "Bash(find /home/jangot/apps/table-server -name \"*.env*\" -o -name \"*.md\" -o -name \"*config*.json\" -o -name \"*.yml\" 2>/dev/null | head -20)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(node -r ts-node/register --test test/telegram-bot.test.ts 2>&1; echo \"EXIT:$?\")"
     ],
     "deny": [
       "Bash(git push --force:*)",
