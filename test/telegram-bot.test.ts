@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { handleStatus, handleIdle, handleRestart, handleText, handleScenes, handleScene, handleCurrent, handleBackup, handleDefault, handleHelp } from '../src/modules/telegram-bot/handlers';
-import type { CommandContext } from '../src/modules/telegram-bot/handlers';
+import { handleStatus, handleIdle, handleRestart, handleText, handleScenes, handleScene, handleCurrent, handleBackup, handleDefault, handleHelp, handleMenu, handleCallbackScene, handleCallbackRestart } from '../src/modules/telegram-bot/handlers';
+import type { CommandContext, CallbackContext } from '../src/modules/telegram-bot/handlers';
 import type { ObsScenesService, SceneForDisplay } from '../src/modules/obs-scenes/types';
 import { SceneNotFoundError } from '../src/modules/obs-scenes/types';
 import type { TelegramBotDeps } from '../src/modules/telegram-bot/types';
@@ -49,21 +49,35 @@ function makeLogger(): Logger {
 function makeMockCtx(
   text: string,
   from: { id: number; username?: string }
-): CommandContext & { replyText: string } {
-  const state: { replyText: string } = { replyText: '' };
+): CommandContext & { replyText: string; replyExtra: unknown } {
+  const state: { replyText: string; replyExtra: unknown } = { replyText: '', replyExtra: undefined };
   const ctx = {
     from,
     message: { text },
-    reply: async (t: string) => {
+    reply: async (t: string, extra?: unknown) => {
       state.replyText = t;
+      state.replyExtra = extra;
     },
   };
-  Object.defineProperty(ctx, 'replyText', {
-    get: () => state.replyText,
-    configurable: true,
-    enumerable: true,
-  });
-  return ctx as CommandContext & { replyText: string };
+  Object.defineProperty(ctx, 'replyText',  { get: () => state.replyText,  configurable: true, enumerable: true });
+  Object.defineProperty(ctx, 'replyExtra', { get: () => state.replyExtra, configurable: true, enumerable: true });
+  return ctx as CommandContext & { replyText: string; replyExtra: unknown };
+}
+
+function makeCallbackCtx(
+  data: string,
+  from: { id: number; username?: string }
+): CallbackContext & { replyText: string; answeredWith: string | undefined } {
+  const state: { replyText: string; answeredWith: string | undefined } = { replyText: '', answeredWith: undefined };
+  const ctx = {
+    from,
+    callbackQuery: { data },
+    answerCbQuery: async (text?: string) => { state.answeredWith = text ?? ''; },
+    reply: async (t: string) => { state.replyText = t; },
+  };
+  Object.defineProperty(ctx, 'replyText',    { get: () => state.replyText,    configurable: true, enumerable: true });
+  Object.defineProperty(ctx, 'answeredWith', { get: () => state.answeredWith, configurable: true, enumerable: true });
+  return ctx as CallbackContext & { replyText: string; answeredWith: string | undefined };
 }
 
 describe('telegram-bot', () => {
@@ -183,7 +197,7 @@ describe('telegram-bot', () => {
     assert.strictEqual(navigateCalled, false);
   });
 
-  it('/scenes: allowed user receives scene list', async () => {
+  it('/scenes: allowed user receives inline_keyboard with scene buttons', async () => {
     const ctx = makeMockCtx('/scenes', allowedUser);
     const deps: TelegramBotDeps = {
       config: testConfig,
@@ -195,8 +209,12 @@ describe('telegram-bot', () => {
       obsScenes: makeObsScenes(),
     };
     await handleScenes(ctx, deps);
-    assert.ok(ctx.replyText.includes('Scene One'));
-    assert.ok(ctx.replyText.includes('scene2'));
+    const extra = ctx.replyExtra as { reply_markup?: { inline_keyboard?: unknown[][] } };
+    assert.ok(extra?.reply_markup?.inline_keyboard, 'должен быть inline_keyboard');
+    const flat = extra.reply_markup!.inline_keyboard!.flat() as { text: string; callback_data: string }[];
+    assert.ok(flat.some((btn) => btn.text === 'Scene One'));
+    assert.ok(flat.some((btn) => btn.callback_data === 'scene:src.scene1'));
+    assert.ok(flat.some((btn) => btn.callback_data === 'scene:src.scene2'));
   });
 
   it('/scenes: obsScenes not set replies "OBS scenes недоступны."', async () => {
@@ -483,5 +501,76 @@ describe('telegram-bot', () => {
     await handleStatus(ctx, deps);
     assert.ok(ctx.replyText.includes('OBS WS: disconnected'));
     assert.ok(!ctx.replyText.includes('Current scene:'));
+  });
+
+  it('handleCallbackScene: allowed user switches scene and answerCbQuery called', async () => {
+    let calledWith: string | null = null;
+    const ctx = makeCallbackCtx('scene:src.scene1', allowedUser);
+    const deps: TelegramBotDeps = {
+      config: testConfig,
+      logger: makeLogger(),
+      allowedUsers: { isAllowed: () => true },
+      navigateToUrl: async () => {},
+      isChromeAlive: () => true,
+      isObsAlive: () => true,
+      obsScenes: makeObsScenes({ setScene: async (n) => { calledWith = n; } }),
+    };
+    await handleCallbackScene(ctx, deps);
+    assert.strictEqual(calledWith, 'src.scene1');
+    assert.ok(ctx.replyText.includes('переключена'));
+    assert.strictEqual(ctx.answeredWith, '');
+  });
+
+  it('handleCallbackScene: disallowed user — answerCbQuery с сообщением, setScene не вызван', async () => {
+    let setSceneCalled = false;
+    const ctx = makeCallbackCtx('scene:src.scene1', disallowedUser);
+    const deps: TelegramBotDeps = {
+      config: testConfig,
+      logger: makeLogger(),
+      allowedUsers: { isAllowed: () => false },
+      navigateToUrl: async () => {},
+      isChromeAlive: () => true,
+      isObsAlive: () => true,
+      obsScenes: makeObsScenes({ setScene: async () => { setSceneCalled = true; } }),
+    };
+    await handleCallbackScene(ctx, deps);
+    assert.strictEqual(setSceneCalled, false);
+    assert.ok(ctx.answeredWith?.includes('запрещён'));
+  });
+
+  it('handleCallbackRestart: restart:chrome вызывает restartChrome', async () => {
+    let chromeCalled = false;
+    const ctx = makeCallbackCtx('restart:chrome', allowedUser);
+    const deps: TelegramBotDeps = {
+      config: testConfig,
+      logger: makeLogger(),
+      allowedUsers: { isAllowed: () => true },
+      navigateToUrl: async () => {},
+      isChromeAlive: () => true,
+      isObsAlive: () => true,
+      restartChrome: async () => { chromeCalled = true; },
+      restartObs: async () => {},
+    };
+    await handleCallbackRestart(ctx, deps);
+    assert.strictEqual(chromeCalled, true);
+    assert.ok(ctx.replyText.includes('Chrome перезапущен'));
+  });
+
+  it('handleMenu: allowed user receives inline_keyboard с кнопками команд', async () => {
+    const ctx = makeMockCtx('/menu', allowedUser);
+    const deps: TelegramBotDeps = {
+      config: testConfig,
+      logger: makeLogger(),
+      allowedUsers: { isAllowed: () => true },
+      navigateToUrl: async () => {},
+      isChromeAlive: () => true,
+      isObsAlive: () => true,
+    };
+    await handleMenu(ctx, deps);
+    const extra = ctx.replyExtra as { reply_markup?: { inline_keyboard?: unknown[][] } };
+    assert.ok(extra?.reply_markup?.inline_keyboard);
+    const flat = extra.reply_markup!.inline_keyboard!.flat() as { callback_data: string }[];
+    assert.ok(flat.some((btn) => btn.callback_data === 'restart:chrome'));
+    assert.ok(flat.some((btn) => btn.callback_data === 'menu:status'));
   });
 });
