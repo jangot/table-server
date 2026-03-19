@@ -18,14 +18,12 @@ This document describes how the application controls an **already running** OBS 
 
 ## 1. Connection to OBS over WebSocket
 
-**Source:** `src/modules/obs-scenes/client.ts`
-
 - **URL:** `ws://${host}:${port}`. Password is sent at connect time.
 - **Methods:** `connect()`, `disconnect()`, `isConnected()`.
 - **Reconnection on disconnect:** Exponential backoff: initial delay 3s, maximum 60s. On `ConnectionClosed` or connect failure, reconnection is scheduled; delay doubles after each attempt up to the cap.
 - **Dependency:** OBS WebSocket 5.x protocol; library `obs-websocket-js`.
 
-**Configuration (control only):** From `config/types.ts` and `config/validate.ts`:
+**Configuration (control only):**
 
 | Env variable   | Config field | Purpose        |
 |----------------|-------------|----------------|
@@ -33,11 +31,37 @@ This document describes how the application controls an **already running** OBS 
 | OBS_PORT       | port        | WebSocket port |
 | OBS_PASSWORD   | password    | WebSocket password |
 
+**Example: URL and connect**
+
+```ts
+const url = `ws://${host}:${port}`;
+// ...
+socket.connect(url, password);
+```
+
+**Example: exponential backoff**
+
+```ts
+const DEFAULT_RECONNECT_DELAY_MS = 3000;
+const MAX_RECONNECT_DELAY_MS = 60000;
+let reconnectDelayMs = DEFAULT_RECONNECT_DELAY_MS;
+
+function scheduleReconnect(): void {
+  reconnectTimer = setTimeout(() => {
+    tryConnect();
+  }, reconnectDelayMs);
+  reconnectDelayMs = Math.min(MAX_RECONNECT_DELAY_MS, reconnectDelayMs * 2);
+}
+
+socket.on('ConnectionClosed', () => {
+  obs = null;
+  scheduleReconnect();
+});
+```
+
 ---
 
 ## 2. OBS API data and actions
-
-**Source:** `src/modules/obs-scenes/client.ts`
 
 ### Data (read)
 
@@ -58,11 +82,45 @@ This document describes how the application controls an **already running** OBS 
 | SetSceneItemEnabled(sceneName, sceneItemId, enabled) | `setSceneItemEnabled(sceneName, sceneItemId, sceneItemEnabled)` | Switch visible nested scene inside the output scene |
 | SetInputSettings(inputName, inputSettings) | `setInputSettings(inputName, inputSettings)` | Bind a window-capture source to a window (e.g. Chrome via capture_window) |
 
+**Example: GetSceneList**
+
+```ts
+async getSceneList(): Promise<{ scenes: Array<{ sceneName: string }> }> {
+  const res = await obs.call('GetSceneList');
+  const scenes = (res as { scenes?: unknown[] }).scenes ?? [];
+  return {
+    scenes: scenes.map((s: unknown) => ({
+      sceneName: (s as { sceneName?: string }).sceneName ?? '',
+    })),
+  };
+}
+```
+
+**Example: OpenSourceProjector**
+
+```ts
+await obs.call('OpenSourceProjector', {
+  sourceName,
+  projectorType: 'Source',
+  monitorIndex,
+});
+```
+
+**Example: SetSceneItemEnabled**
+
+```ts
+await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled });
+```
+
+**Example: SetInputSettings (Chrome window binding)**
+
+```ts
+await client.setInputSettings(sourceName, { capture_window: xid });
+```
+
 ---
 
 ## 3. Scene roles and switching logic
-
-**Sources:** `src/modules/obs-scenes/scenes-service.ts`, `src/modules/obs-scenes/types.ts`, `docs/requirements/obs-scene-requirements.md`
 
 ### Roles
 
@@ -79,9 +137,32 @@ Current scene is determined in the scene named `outputSceneName`: list nested sc
 
 In the scene `outputSceneName`, for each nested scene item call `SetSceneItemEnabled(sceneName, sceneItemId, enabled)` with `enabled === true` only when `sourceName === name`, and `false` for all others. If `name` is not among the nested scene names, the service throws `SceneNotFoundError`.
 
+**Example: get nested scene items (only scenes)**
+
 ```ts
-// setScene(name): enable only one nested scene in output
-// SetSceneItemEnabled(outputSceneName, item.sceneItemId, item.sourceName === name)
+async function getNestedSceneItems(outputSceneName: string) {
+  const { sceneItems } = await client.getSceneItemList(outputSceneName);
+  return sceneItems.filter((item) => item.sourceType === 'OBS_SOURCE_TYPE_SCENE');
+}
+```
+
+**Example: getCurrentScene**
+
+```ts
+const items = await getNestedSceneItems(outputSceneName);
+const enabled = items.find((item) => item.sceneItemEnabled);
+return enabled?.sourceName ?? null;
+```
+
+**Example: setScene — enable only one nested scene**
+
+```ts
+const items = await getNestedSceneItems(outputSceneName);
+const target = items.find((item) => item.sourceName === name);
+if (!target) throw new SceneNotFoundError(name, `Scene not found: ${name}`);
+for (const item of items) {
+  await client.setSceneItemEnabled(outputSceneName, item.sceneItemId, item.sourceName === name);
+}
 ```
 
 ### Service API
@@ -91,21 +172,61 @@ In the scene `outputSceneName`, for each nested scene item call `SetSceneItemEna
 - `getCurrentScene()` — Name of the single enabled nested scene in `outputSceneName`, or null.
 - `setScene(name)` — Enable only the nested scene with `sourceName === name` in `outputSceneName`; others disabled. Throws `SceneNotFoundError` if not found.
 
+**Example: filter switchable scenes (exclude main, respect enabled)**
+
+```ts
+function isSwitchableScene(entry: SceneConfigEntry | undefined): boolean {
+  if (entry?.enabled === false) return false;
+  if (!entry?.type) return true;
+  if (entry.type === 'main') return false;
+  return true;
+}
+```
+
 ---
 
 ## 4. Scene configuration (JSON)
-
-**Sources:** `src/modules/obs-scenes/scenes-config.ts`, `src/modules/obs-scenes/types.ts` (SceneConfigEntry)
 
 - **Path:** Environment variable `SCENES_CONFIG_PATH` (from AppConfig).
 - **Format:** JSON array of objects: `{ name, title?, type?, enabled? }`. `type`: `main` | `output` | `input` | `backup` | `default`.
 - **Purpose:** Display labels and filtering of switchable scenes; scenes with `type === 'main'` or `enabled === false` are excluded from the switchable list. **Source of truth for which scenes exist is OBS;** the config only enriches display and filters.
 
+**Example: SceneConfigEntry type**
+
+```ts
+export interface SceneConfigEntry {
+  name: string;
+  title?: string;
+  type?: string;  // "main" | "output" | "input" | "backup" | "default"
+  enabled?: boolean;
+}
+```
+
+**Example: load and parse scenes config**
+
+```ts
+export function loadScenesConfigSync(path: string | undefined): SceneConfigEntry[] | null {
+  if (path === undefined || path.trim() === '') return null;
+  const raw = fs.readFileSync(path, 'utf-8');
+  const data = JSON.parse(raw);
+  if (!Array.isArray(data)) return null;
+  const result: SceneConfigEntry[] = [];
+  for (const item of data) {
+    if (item != null && typeof item === 'object' && typeof item.name === 'string') {
+      const entry: SceneConfigEntry = { name: item.name };
+      if (typeof item.title === 'string') entry.title = item.title;
+      if (typeof item.type === 'string') entry.type = item.type;
+      if (typeof item.enabled === 'boolean') entry.enabled = item.enabled;
+      result.push(entry);
+    }
+  }
+  return result;
+}
+```
+
 ---
 
 ## 5. Projector and Chrome source binding
-
-**Source:** `src/modules/obs-scenes/index.ts`, `src/modules/obs-scenes/chrome-window-bind.ts`
 
 ### Projector
 
@@ -118,12 +239,48 @@ On WebSocket `onConnected` (when configured):
 
 **Config:** `OBS_PROJECTOR_MONITOR_NAME`, `OBS_PROJECTOR_SCENE_NAME`.
 
+**Example: choose monitor**
+
+```ts
+const monitor = monitors.find(
+  (m) => m.monitorName === projectorMonitorName || m.monitorName.startsWith(`${projectorMonitorName}(`)
+);
+```
+
+**Example: choose projector scene (with fallback)**
+
+```ts
+let projectorScene = projectorSceneName != null
+  ? scenes.find((s) => s.sceneName === projectorSceneName) ?? null
+  : null;
+if (!projectorScene) {
+  projectorScene = scenes.find((s) => s.sceneName.startsWith('output.')) ?? null;
+}
+await client.openSourceProjector(projectorScene.sceneName, monitor.monitorIndex);
+```
+
 ### Chrome source binding
 
 1. Find window by class using `xdotool search --onlyvisible --class chrome`, get window XID.
 2. Call `SetInputSettings(sourceName, { capture_window: xid })` to bind the OBS source to that window.
 
 **Config:** `OBS_CHROME_SOURCE_NAME`. **Dependencies:** `xdotool` (Linux); OBS source must support `capture_window` (window capture).
+
+**Example: bind Chrome window to OBS source**
+
+```ts
+const RETRY_INTERVAL_MS = 500;
+const TIMEOUT_MS = 10_000;
+const deadline = Date.now() + timeoutMs;
+
+while (Date.now() < deadline) {
+  const { stdout } = await execFile('xdotool', ['search', '--onlyvisible', '--class', 'chrome']);
+  const xid = stdout.trim().split('\n')[0];
+  if (!xid) { await sleep(RETRY_INTERVAL_MS); continue; }
+  await client.setInputSettings(sourceName, { capture_window: xid });
+  return;
+}
+```
 
 ---
 
@@ -148,12 +305,12 @@ Environment variables and config fields **for control only** (no path, configDir
 
 Logic is invoked from:
 
-- **Service creation:** `src/index.ts` — `createObsScenesService(config.obs, logger, config.scenesConfigPath)`; the service is passed to idle-server and telegram-bot.
-- **HTTP API** (`src/modules/idle-server/index.ts`):  
+- **Service creation:** Create OBS WebSocket client with `host`, `port`, `password`, optional `onConnected` callback; create scenes service with `client`, `outputSceneName`, `scenesConfig`. The service is passed to idle-server and telegram-bot.
+- **HTTP API:**  
   - GET `/obs/scenes` — Current scene + list for display (SSR page).  
   - POST `/obs/scene` — Body: `{ "scene": "<name>" }`.  
   - POST `/obs/scene/backup` — Switch to scene `backup`.  
   - POST `/obs/scene/default` — Switch to scene `default`.
-- **Telegram** (`src/modules/telegram-bot/handlers.ts`): Commands `/scenes`, `/scene`, `/current`, `/backup`, `/default`, `/status`; callback_data for scene buttons (e.g. `scene:name`); scenes list filtered by prefix `src.` for the displayed list.
+- **Telegram:** Commands `/scenes`, `/scene`, `/current`, `/backup`, `/default`, `/status`; callback_data for scene buttons (e.g. `scene:name`); scenes list filtered by prefix `src.` for the displayed list.
 
 The **contracts** (what to call against OBS and how to interpret config) are not tied to Node/Express/Telegram; another stack can implement the same behaviour from this description.

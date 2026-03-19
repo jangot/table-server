@@ -19,27 +19,82 @@ This document describes how the application controls an **already running** Chro
 
 ## 1. Connecting to Chrome via CDP
 
-**Sources:** `src/modules/chrome/cdp.ts`, `src/modules/chrome/waitDevTools.ts`.
-
 - **Endpoint:** `http://127.0.0.1:${port}`. The port comes from configuration (default 9222). The application connects using **puppeteer-core**: `connect({ browserURL: 'http://127.0.0.1:${port}' })`.
-- **Waiting for readiness:** Before using CDP, the app can wait until DevTools is ready by polling `GET http://127.0.0.1:${port}/json/version` every 250 ms until the response is 200 or a timeout is reached. This is implemented in `waitForDevTools(port, timeoutMs)`. For a "control-only" setup (no process launch), this can be used to verify that Chrome is ready without starting it.
-- **Reconnection:** The current code does not maintain a long-lived connection. Each navigation creates a new CDP connection and disconnects when done (`browser.disconnect()`). There is no explicit reconnection on connection loss. The document should note that readiness can be checked via `GET /json/version` or a successful `connect()` when implementing in a new project.
+- **Waiting for readiness:** Before using CDP, the app can wait until DevTools is ready by polling `GET http://127.0.0.1:${port}/json/version` every 250 ms until the response is 200 or a timeout is reached. For a "control-only" setup (no process launch), this can be used to verify that Chrome is ready without starting it.
+- **Reconnection:** The current code does not maintain a long-lived connection. Each navigation creates a new CDP connection and disconnects when done (`browser.disconnect()`). There is no explicit reconnection on connection loss. When implementing in a new project: readiness can be checked via `GET /json/version` or a successful `connect()`.
+
+**Example: connect with puppeteer-core**
+
+```ts
+import { connect } from 'puppeteer-core';
+
+const browser = await connect({ browserURL: `http://127.0.0.1:${port}` });
+try {
+  const pages = await browser.pages();
+  const page = pages[0] ?? (await browser.newPage());
+  // ... use page
+} finally {
+  await browser.disconnect();
+}
+```
+
+**Example: wait for DevTools (polling)**
+
+```ts
+export function waitForDevTools(port: number, timeoutMs: number): Promise<void> {
+  const start = Date.now();
+  const intervalMs = 250;
+
+  return new Promise((resolve, reject) => {
+    function tick(): void {
+      if (Date.now() - start >= timeoutMs) {
+        reject(new Error(`Chrome DevTools not ready within ${timeoutMs}ms`));
+        return;
+      }
+      const req = http.get(`http://127.0.0.1:${port}/json/version`, (res) => {
+        if (res.statusCode === 200) {
+          res.resume();
+          resolve();
+          return;
+        }
+        setTimeout(tick, intervalMs);
+      });
+      req.on('error', () => setTimeout(tick, intervalMs));
+      req.end();
+    }
+    tick();
+  });
+}
+```
 
 ---
 
 ## 2. Getting data
 
-**Sources:** `src/modules/chrome/lastUrlState.ts`, `src/modules/chrome/cdp.ts`.
-
 - **Current URL:** Read from a file with `readLastUrl(filePath)` (returns `Promise<string | null>`). The path is from config `lastUrlStatePath` (default `./.last-url`). The URL is written on every successful navigation via `writeLastUrl(statePath, url)`.
 - **Tabs/pages:** Only the first page is used: `pages[0]` or a single `newPage()`. There is no support for multiple tabs or windows.
 - **Window size (viewport):** Set via CDP during navigation: `page.setViewport({ width, height, deviceScaleFactor })`. Values come from config: `windowWidth`, `windowHeight`, `deviceScaleFactor`. Zoom and fullscreen via CDP are not used.
 
+**Example: read/write last URL**
+
+```ts
+export async function readLastUrl(filePath: string): Promise<string | null> {
+  try {
+    const data = await readFile(filePath, 'utf-8');
+    return data.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeLastUrl(filePath: string, url: string): Promise<void> {
+  await writeFile(filePath, url, 'utf-8');
+}
+```
+
 ---
 
 ## 3. Control actions (navigation, viewport, scripts)
-
-**Sources:** `src/modules/chrome/cdp.ts`, `src/modules/chrome/scriptRegistry.ts`.
 
 - **Navigation:** `navigateToUrl(port, url, statePath, logger, options?)`:
   - Connects to `browserURL`, gets or creates a page (`pages[0]` or `newPage()`).
@@ -51,24 +106,107 @@ This document describes how the application controls an **already running** Chro
 
   Order in code: **connect → page → setViewport? → goto → resolveScript? → evaluate? → writeLastUrl → disconnect**.
 
-- **Domain scripts:** A map `hostname → script filename` is loaded from a JSON file via `loadScriptMap(mapPath)`. On navigation, `resolveScript(url, scriptsDir, scriptMap, logger)` is called: the URL’s hostname is used to look up the filename in the map; the file is read from `scriptsDir` (only basename is used, no `..`). The script is executed after `goto` with `page.evaluate(script)`. Limit: one script per domain, run after `domcontentloaded`. Config: `chromeScriptsDir`, `chromeScriptsMap` (path to the JSON map).
+- **Domain scripts:** A map `hostname → script filename` is loaded from a JSON file. On navigation, the URL's hostname is used to look up the filename in the map; the file is read from `scriptsDir` (only basename is used, no `..`). The script is executed after `goto` with `page.evaluate(script)`. Limit: one script per domain, run after `domcontentloaded`. Config: `chromeScriptsDir`, `chromeScriptsMap` (path to the JSON map).
+
+**Example: navigateToUrl (core flow)**
+
+```ts
+export async function navigateToUrl(
+  port: number,
+  url: string,
+  statePath: string,
+  logger: Logger,
+  options?: {
+    timeoutMs?: number;
+    viewport?: { width: number; height: number; deviceScaleFactor?: number };
+    scriptRegistry?: { scriptsDir: string; scriptMap: ScriptMap };
+  }
+): Promise<void> {
+  const browser = await connect({ browserURL: `http://127.0.0.1:${port}` });
+  try {
+    const pages = await browser.pages();
+    const page = pages[0] ?? (await browser.newPage());
+    if (options?.viewport) {
+      await page.setViewport({
+        width: options.viewport.width,
+        height: options.viewport.height,
+        deviceScaleFactor: options.viewport.deviceScaleFactor ?? 1,
+      });
+    }
+    const timeout = options?.timeoutMs ?? 30000;
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+
+    if (options?.scriptRegistry) {
+      const { scriptsDir, scriptMap } = options.scriptRegistry;
+      const script = resolveScript(url, scriptsDir, scriptMap, logger);
+      if (script) {
+        await page.evaluate(script);
+      }
+    }
+
+    await writeLastUrl(statePath, url);
+  } finally {
+    await browser.disconnect();
+  }
+}
+```
+
+**Example: script map format and resolveScript**
+
+```ts
+// Script map JSON: { "hostname": "script.js" }
+export type ScriptMap = Record<string, string>;
+
+export function resolveScript(
+  url: string,
+  scriptsDir: string,
+  scriptMap: ScriptMap,
+  logger: Logger
+): string | null {
+  const hostname = new URL(url).hostname;
+  const fileName = scriptMap[hostname];
+  if (!fileName) return null;
+  // Safety: only basename, no ".."
+  const safe = path.basename(fileName);
+  if (safe !== fileName || safe === '' || safe.includes('..')) return null;
+  const scriptPath = path.join(scriptsDir, safe);
+  return fs.readFileSync(scriptPath, 'utf-8');
+}
+
+// Usage after goto:
+if (script) await page.evaluate(script);
+```
 
 ---
 
 ## 4. Binding Chrome window to OBS source
 
-**Sources:** `src/modules/obs-scenes/chrome-window-bind.ts`, `src/modules/obs-scenes/index.ts`. See also `docs/requirements/obs_chrome_window_binding.md` for the broader spec (XID, xdotool, SetInputSettings).
-
-- **When it runs:** On OBS connect/reconnect — `onConnected` callback runs `bindChromeWindow(client, chromeSourceName, logger)`.
+- **When it runs:** On OBS connect/reconnect — `onConnected` callback runs the bind function.
 - **Finding the window:** On X11, run `xdotool search --onlyvisible --class chrome` and take the first XID from stdout.
 - **Action:** Call OBS WebSocket `client.setInputSettings(sourceName, { capture_window: xid })`. On error, log and retry every 500 ms until a deadline (default 10 s).
 - **Config:** `obs.chromeSourceName` — the name of the Window Capture source in OBS. The code uses the key **`capture_window`** (not `window`) in SetInputSettings.
+
+**Example: bind Chrome window (xdotool + SetInputSettings)**
+
+```ts
+const RETRY_INTERVAL_MS = 500;
+const TIMEOUT_MS = 10_000;
+const deadline = Date.now() + timeoutMs;
+
+while (Date.now() < deadline) {
+  const { stdout } = await execFile('xdotool', ['search', '--onlyvisible', '--class', 'chrome']);
+  const xid = stdout.trim().split('\n')[0];
+  if (!xid) { await sleep(RETRY_INTERVAL_MS); continue; }
+  await client.setInputSettings(sourceName, { capture_window: xid });
+  return;
+}
+```
 
 ---
 
 ## 5. Control configuration (summary table)
 
-Configuration used **only for control** (no launch-related fields such as path, userDataDir, kiosk, windowMode, position, ozonePlatform). Sources: `src/modules/config/types.ts`, `src/modules/config/validate.ts`.
+Configuration used **only for control** (no launch-related fields such as path, userDataDir, kiosk, windowMode, position, ozonePlatform).
 
 | Config field / env | Description | Default |
 |--------------------|-------------|---------|
@@ -89,24 +227,42 @@ Configuration used **only for control** (no launch-related fields such as path, 
 
 ## 6. Dependencies and command sources
 
-**Sources:** `src/modules/telegram-bot/handlers.ts`, `src/index.ts`, `src/modules/idle-server/index.ts`.
-
 - **Application startup:** After the orchestrator has run, the app calls `readLastUrl(statePath)` once and, if a URL is returned, calls `navigateToUrl(lastUrl)` to restore the last page.
 - **Telegram:**  
   - `/idle` → `navigateToUrl(idleUrl)` (idle URL is `http://localhost:${config.idle.port}/`).  
   - A text message containing a URL → `navigateToUrl(url)`.  
-  - `/restart chrome` (or `all`) → `restartChrome`. In a new project that does not start Chrome, process restart is not applicable; the document only describes the current call pattern (restart triggers kill + launch in this codebase).
+  - `/restart chrome` (or `all`) → restart. In a new project that does not start Chrome, process restart is not applicable; the document only describes the current call pattern.
 - **HTTP (idle-server):** Does **not** trigger Chrome navigation. It serves `/health` (chrome/obs alive), `GET /obs/scenes`, and `POST /obs/scene` for scene switching.
-- **Injected into the bot:** `navigateToUrl`, `isChromeAlive`, `restartChrome` are passed from `src/index.ts`.
+- **Injected into the bot:** `navigateToUrl`, `isChromeAlive`, `restartChrome` are passed from the application bootstrap.
 
 ---
 
 ## 7. Checking "Chrome alive" (isChromeAlive)
 
-**Source:** `src/modules/chrome/index.ts`.
+- **Current POC implementation:** Uses the process that the application started. In a repository that does not start Chrome, this process will not exist.
+- **Recommendation for "control only":** Treat Chrome as alive if CDP is reachable, e.g. successful `GET /json/version` on the CDP port or a successful `connect()`. If that fails, consider Chrome unavailable. This alternative should be implemented when porting to the new project.
 
-- **Current POC implementation:** Uses `getChromeProcess()` — the process that the application started. In a repository that does not start Chrome, this process will not exist.
-- **Recommendation for "control only":** Treat Chrome as alive if CDP is reachable, e.g. successful `GET /json/version` on the CDP port or a successful `connect()`. If that fails, consider Chrome unavailable. This alternative should be described when porting to the new project.
+**Example: POC (process-based)**
+
+```ts
+function isChromeAlive(): boolean {
+  const proc = getChromeProcess();
+  return proc != null && proc.exitCode === null;
+}
+```
+
+**Example: control-only (CDP-based)**
+
+```ts
+async function isChromeAlive(port: number): Promise<boolean> {
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+    return res.status === 200;
+  } catch {
+    return false;
+  }
+}
+```
 
 ---
 
@@ -120,4 +276,4 @@ Configuration used **only for control** (no launch-related fields such as path, 
 - [x] Dependencies: who calls Chrome logic (startup, Telegram); idle-server does not trigger navigation.
 - [x] isChromeAlive: current implementation and recommended CDP-based check for the new project.
 
-The document should allow a developer in the new repository to implement control of an already-running Chrome instance without reading the current codebase; all modules/files referenced in the analysis are covered in the sections above.
+The document should allow a developer in the new repository to implement control of an already-running Chrome instance without reading the current codebase; all behaviour described above is covered with examples.
